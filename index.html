@@ -195,11 +195,25 @@
 
         <div>
           <label class="block font-bold text-gray-600 mb-1 text-[11px]">Opsi Pajak (PPN 11%):</label>
-          <select id="taxOption" onchange="updateCartUI()" class="w-full p-2 bg-white border rounded-xl font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-black">
-            <option value="none">Tanpa Pajak (0%)</option>
-            <option value="inc">Include Pajak (Sudah Termasuk PPN)</option>
-            <option value="exc">Exclude Pajak (Tambah PPN 11%)</option>
-          </select>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 10px 0;">
+  <span style="font-size: 12px; color: #4b5563;">Status Pajak (11%):</span>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span id="taxStatusLabel" style="font-size: 12px; font-weight: bold; color: #ef4444;">Exclude</span>
+    <label class="switch" style="position: relative; display: inline-block; width: 50px; height: 26px;">
+      <input type="checkbox" id="taxToggle" onchange="updateCartUI()" style="opacity: 0; width: 0; height: 0;">
+      <span class="slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ef4444; transition: .4s; border-radius: 34px;"></span>
+    </label>
+  </div>
+</div>
+
+<style>
+  .switch input:checked + .slider { background-color: #10b981; }
+  .switch input:checked + .slider:before { transform: translateX(24px); }
+  .slider:before {
+    position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px;
+    background-color: white; transition: .4s; border-radius: 50%;
+  }
+</style>
         </div>
       </div>
 
@@ -414,10 +428,7 @@
       } else {
         cart.push({ name, price, qty: 1 });
       }
-      updateCartUI();
-    }
-
-    function updateCartUI() {
+      function updateCartUI() {
       const badge = document.getElementById('cartBadge');
       const totalQty = cart.reduce((acc, item) => acc + item.qty, 0);
       
@@ -457,19 +468,29 @@
         </div>
       `).join('');
 
-      const taxOption = document.getElementById('taxOption').value;
+      // LOGIKA SAKELAR PAJAK BARU
+      const taxToggle = document.getElementById('taxToggle');
+      const taxStatusLabel = document.getElementById('taxStatusLabel');
       let taxAmount = 0;
       let grandTotal = subtotal;
-      let taxLabel = "Pajak (0%):";
+      let taxLabel = "";
 
-      if (taxOption === "exc") {
-        taxAmount = Math.round(subtotal * 0.11);
-        grandTotal = subtotal + taxAmount;
-        taxLabel = "Pajak Excl (11%):";
-      } else if (taxOption === "inc") {
+      if (taxToggle && taxToggle.checked) {
+        // JIKA AKTIF (GREEN) = INCLUDE
+        taxStatusLabel.innerText = "Include";
+        taxStatusLabel.style.color = "#10b981";
         taxAmount = Math.round(subtotal - (subtotal / 1.11));
         grandTotal = subtotal;
         taxLabel = "Pajak Incl (11%):";
+      } else {
+        // JIKA MATI (RED) = EXCLUDE
+        if(taxStatusLabel) {
+          taxStatusLabel.innerText = "Exclude";
+          taxStatusLabel.style.color = "#ef4444";
+        }
+        taxAmount = Math.round(subtotal * 0.11);
+        grandTotal = subtotal + taxAmount;
+        taxLabel = "Pajak Excl (11%):";
       }
 
       const paymentMethods = document.getElementsByName('paymentMethod');
@@ -661,19 +682,21 @@
       }
 
       let subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
-      const taxOption = document.getElementById('taxOption').value;
+      
+      // LOGIKA SAKELAR DI CHECKOUT
+      const taxToggle = document.getElementById('taxToggle');
       let taxAmount = 0;
       let grandTotal = subtotal;
-      let taxLabel = "Pajak (0%):";
+      let taxLabel = "";
 
-      if (taxOption === "exc") {
-        taxAmount = Math.round(subtotal * 0.11);
-        grandTotal = subtotal + taxAmount;
-        taxLabel = "Pajak Excl (11%):";
-      } else if (taxOption === "inc") {
+      if (taxToggle && taxToggle.checked) {
         taxAmount = Math.round(subtotal - (subtotal / 1.11));
         grandTotal = subtotal;
         taxLabel = "Pajak Incl (11%):";
+      } else {
+        taxAmount = Math.round(subtotal * 0.11);
+        grandTotal = subtotal + taxAmount;
+        taxLabel = "Pajak Excl (11%):";
       }
       
       if (mode === 'pdf') {
