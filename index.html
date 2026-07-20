@@ -487,78 +487,65 @@
       }
     }
 
-    function proccesFileToBase64(file) {
+    // Membaca file SEKALIGUS mengompres ukurannya agar ringan diupload
+function proccesFileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
-    reader.onload = () => {
-      // Langsung kirim data base64 asli tanpa manipulasi canvas
-      resolve(reader.result);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 600; // Batasi lebar maksimum 600px agar hemat memori spreadsheet/drive
+        let width = img.width;
+        let height = img.height;
+
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Kompres kualitas gambar ke 70% (JPEG)
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
     };
     reader.onerror = (error) => reject(error);
   });
 }
 
-    async function handleSaveProduct(e) {
-      e.preventDefault();
-      
-      const btn = document.getElementById('btnAddProdSubmit');
-      const editId = document.getElementById('editProdId').value;
-      const isEdit = editId !== "";
-      const fileInput = document.getElementById('newProdFile');
+// Proses cetak struk dengan tinggi kertas dinamis (anti-terpotong)
+async function processCheckout() {
+  if (cart.length === 0) {
+    alert("Keranjang masih kosong!");
+    return;
+  }
 
-      const prodName = document.getElementById('newProdName').value;
-      const prodPrice = document.getElementById('newProdPrice').value;
-      const prodSku = document.getElementById('newProdSku').value;
-      const prodImageText = document.getElementById('newProdImage').value;
+  const receipt = document.getElementById('thermalReceiptPaper');
+  
+  html2canvas(receipt, { scale: 2 }).then(canvas => {
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    
+    const imgWidth = 80; // lebar struk thermal 80mm
+    const pageHeight = (canvas.height * imgWidth) / canvas.width; // kalkulasi tinggi dinamis
 
-      btn.innerText = "Mengompres & Menyimpan...";
-      btn.disabled = true;
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: [imgWidth, pageHeight]
+    });
+    
+    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, pageHeight);
+    pdf.save(`Struk_Toko_Bu_Aina_${Date.now()}.pdf`);
+  });
 
-      let base64File = null;
-      
-      if (fileInput && fileInput.files && fileInput.files.length > 0) {
-        try {
-          base64File = await proccesFileToBase64(fileInput.files[0]);
-        } catch (err) {
-          console.error("Gagal memproses/mengompres gambar:", err);
-        }
-      }
-
-      const payload = {
-        action: isEdit ? "EDIT_PRODUCT" : "ADD_PRODUCT",
-        id: editId,
-        name: prodName,
-        price: prodPrice,
-        sku: prodSku,
-        image: prodImageText,
-        fileData: base64File
-      };
-
-      try {
-        const response = await fetch(APPS_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
-        });
-        
-        const resData = await response.json();
-        
-        if (resData.status === "SUCCESS") {
-          alert(isEdit ? "Produk berhasil diperbarui!" : "Produk berhasil ditambahkan!");
-          resetForm();
-          await loadProducts();
-        } else {
-          alert("Gagal menyimpan ke Spreadsheet: " + resData.status);
-        }
-      } catch (err) {
-        console.error(err);
-        alert("Terjadi kesalahan saat mengunggah.");
-      } finally {
-        btn.disabled = false;
-        btn.innerText = isEdit ? "Simpan Perubahan" : "+ Simpan Produk Ke Spreadsheet";
-      }
-    }
+  // ... (Sisa kode fetch POST LOG_TRANSACTION kamu di bawahnya sudah benar)
 
     async function processCheckout() {
       if (cart.length === 0) {
