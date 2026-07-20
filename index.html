@@ -87,6 +87,12 @@
     </div>
 
     <div class="flex items-center gap-2">
+      <!-- TOMBOL BLUETOOTH PRINTER -->
+      <button id="btnBluetooth" onclick="connectBluetooth()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-2xl text-xs font-semibold border border-blue-100 transition">
+        <i data-lucide="bluetooth"></i>
+        <span id="btStatusText">Hubungkan Printer</span>
+      </button>
+
       <button onclick="openModal('manageModal')" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-2xl text-xs font-semibold border border-gray-100 transition">
         <i data-lucide="plus-circle" class="w-4 h-4"></i>
         Kelola Produk
@@ -247,9 +253,15 @@
           <div class="text-center text-[9px] text-gray-400 mt-2.5">Terima kasih telah berbelanja!</div>
         </div>
 
-        <button onclick="processCheckout()" class="w-full py-3 bg-emerald-600 text-white font-bold text-xs rounded-xl hover:bg-emerald-700 transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20">
-          <i data-lucide="printer" class="w-4 h-4"></i> Cetak Struk & Simpan Transaksi
-        </button>
+        <!-- AKSI CETAK -->
+        <div class="flex gap-2">
+          <button onclick="processCheckout('pdf')" class="flex-1 py-3 bg-gray-700 text-white font-bold text-xs rounded-xl hover:bg-gray-800 transition flex items-center justify-center gap-2">
+            <i data-lucide="file-text" class="w-4 h-4"></i> Simpan PDF
+          </button>
+          <button onclick="processCheckout('bluetooth')" class="flex-[2] py-3 bg-emerald-600 text-white font-bold text-xs rounded-xl hover:bg-emerald-700 transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20">
+            <i data-lucide="printer" class="w-4 h-4"></i> Cetak Bluetooth & Simpan
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -260,6 +272,7 @@
 
     let products = [];
     let cart = [];
+    let bleCharacteristic = null; // Menyimpan objek bluetooth printer
 
     lucide.createIcons();
 
@@ -280,6 +293,66 @@
 
     function closeModal(id) {
       document.getElementById(id).classList.add('hidden');
+    }
+
+    async function connectBluetooth() {
+      try {
+        const device = await navigator.bluetooth.requestDevice({
+          filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb', '0000ffe0-0000-1000-8000-00805f9b34fb'] }],
+          optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb', '0000ffe0-0000-1000-8000-00805f9b34fb']
+        });
+        
+        const server = await device.gatt.connect();
+        const services = await server.getPrimaryServices();
+        
+        let foundChar = null;
+        for (const service of services) {
+          const characteristics = await service.getCharacteristics();
+          for (const char of characteristics) {
+            if (char.properties.write || char.properties.writeWithoutResponse) {
+              foundChar = char;
+              break;
+            }
+          }
+          if (foundChar) break;
+        }
+
+        if (foundChar) {
+          bleCharacteristic = foundChar;
+          document.getElementById('btStatusText').innerText = "Printer Terhubung";
+          document.getElementById('btnBluetooth').className = "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-50 text-emerald-700 rounded-2xl text-xs font-semibold border border-emerald-100";
+          alert("Printer thermal berhasil dihubungkan!");
+        } else {
+          alert("Karakteristik write printer tidak ditemukan.");
+        }
+      } catch (err) {
+        console.error("Bluetooth gagal:", err);
+        alert("Gagal menghubungkan bluetooth. Pastikan Bluetooth aktif.");
+      }
+    }
+
+    async function sendToPrinterBluetooth(text) {
+      if (!bleCharacteristic) {
+        alert("Printer belum terhubung! Silakan klik tombol 'Hubungkan Printer' di atas terlebih dahulu.");
+        return false;
+      }
+      try {
+        const encoder = new TextEncoder();
+        // Format text dasar dengan tambahan spasi pemotong kertas kosong di bawah struk (Feed)
+        const bytes = encoder.encode(text + "\n\n\n\n");
+        
+        // Kirim data dalam ukuran chunk (potongan) kecil maksimal 20 bytes (standar batasan BLE)
+        const chunkSize = 20;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          const chunk = bytes.slice(i, i + chunkSize);
+          await bleCharacteristic.writeValue(chunk);
+        }
+        return true;
+      } catch (e) {
+        console.error(e);
+        alert("Gagal mentransfer data cetak ke printer.");
+        return false;
+      }
     }
 
     async function loadProducts() {
@@ -579,7 +652,7 @@
       });
     }
 
-    async function processCheckout() {
+    async function processCheckout(mode) {
       if (cart.length === 0) {
         alert("Keranjang masih kosong!");
         return;
@@ -595,24 +668,77 @@
           break;
         }
       }
+
+      // Hitung Data untuk Printer Text
+      let subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+      const taxOption = document.getElementById('taxOption').value;
+      let taxAmount = 0;
+      let grandTotal = subtotal;
+      let taxLabel = "Pajak (0%):";
+
+      if (taxOption === "exc") {
+        taxAmount = Math.round(subtotal * 0.11);
+        grandTotal = subtotal + taxAmount;
+        taxLabel = "Pajak Excl (11%):";
+      } else if (taxOption === "inc") {
+        taxAmount = Math.round(subtotal - (subtotal / 1.11));
+        grandTotal = subtotal;
+        taxLabel = "Pajak Incl (11%):";
+      }
       
-      html2canvas(receipt, { scale: 2 }).then(canvas => {
-        const imgData = canvas.toDataURL('image/png');
-        const { jsPDF } = window.jspdf;
-        
-        const imgWidth = 80; 
-        const pageHeight = (canvas.height * imgWidth) / canvas.width; 
+      if (mode === 'pdf') {
+        // Mode 1: Ekspor File PDF biasa
+        html2canvas(receipt, { scale: 2 }).then(canvas => {
+          const imgData = canvas.toDataURL('image/png');
+          const { jsPDF } = window.jspdf;
+          
+          const imgWidth = 80; 
+          const pageHeight = (canvas.height * imgWidth) / canvas.width; 
 
-        const pdf = new jsPDF({
-          orientation: 'portrait',
-          unit: 'mm',
-          format: [imgWidth, pageHeight]
+          const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: [imgWidth, pageHeight]
+          });
+          
+          pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, pageHeight);
+          pdf.save(`Struk_Toko_Bu_Aina_${Date.now()}.pdf`);
         });
-        
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, pageHeight);
-        pdf.save(`Struk_Toko_Bu_Aina_${Date.now()}.pdf`);
-      });
+      } else if (mode === 'bluetooth') {
+        // Mode 2: Cetak Langsung Teks via Bluetooth ESC/POS (Lebih cepat & hemat baterai)
+        if (!bleCharacteristic) {
+          alert("Printer Bluetooth belum terhubung!");
+          return;
+        }
 
+        // Susun struktur struk teks tulisan biasa (Rata 32 karakter standar printer 58mm)
+        let receiptText = "";
+        receiptText += "     TOKO BU AINA      \n";
+        receiptText += "Struk Pembayaran Thermal\n";
+        receiptText += "--------------------------------\n";
+        
+        cart.forEach(item => {
+          receiptText += `${item.name}\n`;
+          let leftQtyText = `  ${item.qty} x Rp ${item.price.toLocaleString('id-ID')}`;
+          let rightTotalStr = `Rp ${(item.price * item.qty).toLocaleString('id-ID')}`;
+          let spacesCount = 32 - leftQtyText.length - rightTotalStr.length;
+          let spaces = spacesCount > 0 ? " ".repeat(spacesCount) : " ";
+          receiptText += leftQtyText + spaces + rightTotalStr + "\n";
+        });
+
+        receiptText += "--------------------------------\n";
+        receiptText += `Subtotal:      Rp ${subtotal.toLocaleString('id-ID')}\n`;
+        receiptText += `${taxLabel.padEnd(15)} Rp ${taxAmount.toLocaleString('id-ID')}\n`;
+        receiptText += `Metode Bayar:  ${selectedMethod}\n`;
+        receiptText += `TOTAL:         Rp ${grandTotal.toLocaleString('id-ID')}\n`;
+        receiptText += "--------------------------------\n";
+        receiptText += "  Terima kasih telah berbelanja \n";
+
+        const printSuccess = await sendToPrinterBluetooth(receiptText);
+        if (!printSuccess) return; // batalkan log jika printer gagal total
+      }
+
+      // Kirim Data Transaksi ke Google Sheets Apps Script
       try {
         await fetch(APPS_SCRIPT_URL, {
           method: "POST",
@@ -620,15 +746,15 @@
           body: JSON.stringify({
             action: "LOG_TRANSACTION",
             nama_file: `TRX_${Date.now()} (${selectedMethod})`,
-            status: "Printed & Saved"
+            status: mode === 'bluetooth' ? "Bluetooth Printed & Saved" : "PDF Saved"
           })
         });
-        alert("Transaksi berhasil dicetak dan dicatat!");
+        alert("Transaksi berhasil dicatat!");
         cart = [];
         updateCartUI();
         closeModal('cartModal');
       } catch (err) {
-        alert("Gagal mencatat transaksi.");
+        alert("Gagal mencatat transaksi ke Spreadsheet.");
       }
     }
   </script>
