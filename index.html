@@ -117,20 +117,37 @@
     </div>
   </div>
 
-  <!-- MODAL 2: RESUME ORDER -->
+  <!-- MODAL 2: RESUME ORDER (DENGAN OPTION TOGGLE PAJAK) -->
   <div id="orderModal" class="fixed inset-0 bg-black/50 z-40 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
       <div class="flex justify-between items-center border-b pb-3">
         <h2 class="font-bold text-lg text-gray-800">Resume Order</h2>
         <button onclick="toggleOrderModal(false)" class="text-gray-400 hover:text-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
+      
       <div id="cartList" class="space-y-3 max-h-52 overflow-y-auto custom-scroll">
         <p class="text-xs text-gray-400 text-center py-8">Keranjang belanja kosong</p>
       </div>
+
+      <!-- SAKELAR TOGGLE PAJAK -->
+      <div class="bg-gray-50 p-3 rounded-2xl flex justify-between items-center border">
+        <div class="flex items-center gap-2">
+          <i data-lucide="receipt-text" class="w-4 h-4 text-gray-600"></i>
+          <span class="text-xs font-semibold text-gray-700">Hitung Pajak (PPN 11%)</span>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" id="taxToggle" onchange="renderCart()" class="sr-only peer">
+          <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+        </label>
+      </div>
+
+      <!-- RINCIAN TOTAL HARGA -->
       <div class="border-t pt-3 space-y-1.5 text-xs text-gray-600">
         <div class="flex justify-between"><span>Subtotal</span><span id="subtotalText" class="font-semibold">Rp 0</span></div>
+        <div id="taxRow" class="flex justify-between text-indigo-600 hidden"><span>Pajak (11%)</span><span id="taxText" class="font-semibold">Rp 0</span></div>
         <div class="flex justify-between font-extrabold text-sm text-gray-900 border-t pt-2"><span>Total</span><span id="totalText" class="text-indigo-600">Rp 0</span></div>
       </div>
+
       <button id="btnPreview" onclick="showReceiptPreview()" disabled class="w-full py-3.5 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 disabled:bg-gray-300 transition text-sm">
         PREVIEW NOTA & PEMBAYARAN
       </button>
@@ -157,6 +174,7 @@
 
   <script>
     lucide.createIcons();
+    // Pastikan URL di bawah ini sama dengan URL Apps Script terbaru Anda
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwyxgo3OgB73c3fGjxd7_En-BKcKFY_fDjolbRde0TlNA2iIm1y3pTCDTj8YEfVhTHWyA/exec";
     
     let products = [];
@@ -329,42 +347,70 @@
       if (cart.length === 0) {
         cartList.innerHTML = `<p class="text-xs text-gray-400 text-center py-8">Keranjang belanja kosong</p>`;
         document.getElementById('subtotalText').innerText = "Rp 0";
+        document.getElementById('taxText').innerText = "Rp 0";
         document.getElementById('totalText').innerText = "Rp 0";
+        document.getElementById('taxRow').classList.add('hidden');
         document.getElementById('btnPreview').disabled = true;
         return;
       }
 
-      let subtotal = 0;
-      cartList.innerHTML = cart.map(item => {
-        subtotal += item.price * item.qty;
-        return `
-          <div class="flex justify-between items-center bg-gray-50 p-2.5 rounded-2xl">
-            <div>
-              <p class="font-bold text-xs text-gray-800">${item.name}</p>
-              <p class="text-[10px] text-gray-400">Qty: ${item.qty} x Rp ${Number(item.price).toLocaleString('id-ID')}</p>
-            </div>
-            <span class="font-bold text-xs text-gray-900">Rp ${(item.price * item.qty).toLocaleString('id-ID')}</span>
+      let subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+      
+      cartList.innerHTML = cart.map(item => `
+        <div class="flex justify-between items-center bg-gray-50 p-2.5 rounded-2xl">
+          <div>
+            <p class="font-bold text-xs text-gray-800">${item.name}</p>
+            <p class="text-[10px] text-gray-400">Qty: ${item.qty} x Rp ${Number(item.price).toLocaleString('id-ID')}</p>
           </div>
-        `;
-      }).join('');
+          <span class="font-bold text-xs text-gray-900">Rp ${(item.price * item.qty).toLocaleString('id-ID')}</span>
+        </div>
+      `).join('');
+
+      // Hitung Pajak Jika Sakelar Toggle Aktif
+      const isTaxActive = document.getElementById('taxToggle').checked;
+      const taxRate = 0.11; // 11% PPN
+      const taxAmount = isTaxActive ? Math.round(subtotal * taxRate) : 0;
+      const grandTotal = subtotal + taxAmount;
 
       document.getElementById('subtotalText').innerText = "Rp " + subtotal.toLocaleString('id-ID');
-      document.getElementById('totalText').innerText = "Rp " + subtotal.toLocaleString('id-ID');
+      
+      if (isTaxActive) {
+        document.getElementById('taxRow').classList.remove('hidden');
+        document.getElementById('taxText').innerText = "Rp " + taxAmount.toLocaleString('id-ID');
+      } else {
+        document.getElementById('taxRow').classList.add('hidden');
+      }
+
+      document.getElementById('totalText').innerText = "Rp " + grandTotal.toLocaleString('id-ID');
       document.getElementById('btnPreview').disabled = false;
     }
 
     function showReceiptPreview() {
       toggleOrderModal(false);
       const itemsContainer = document.getElementById('receiptItems');
-      let subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
       
-      itemsContainer.innerHTML = cart.map(item => `
+      let subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+      const isTaxActive = document.getElementById('taxToggle').checked;
+      const taxAmount = isTaxActive ? Math.round(subtotal * 0.11) : 0;
+      const grandTotal = subtotal + taxAmount;
+      
+      let itemsHTML = cart.map(item => `
         <div class="flex justify-between text-[11px]">
           <span>${item.name} x${item.qty}</span>
           <span>Rp ${(item.price * item.qty).toLocaleString('id-ID')}</span>
         </div>
       `).join('');
-      document.getElementById('receiptTotal').innerText = "Rp " + subtotal.toLocaleString('id-ID');
+
+      if (isTaxActive) {
+        itemsHTML += `
+          <div class="border-t border-dashed border-gray-400 my-1"></div>
+          <div class="flex justify-between text-[11px]"><span>Subtotal</span><span>Rp ${subtotal.toLocaleString('id-ID')}</span></div>
+          <div class="flex justify-between text-[11px]"><span>PPN (11%)</span><span>Rp ${taxAmount.toLocaleString('id-ID')}</span></div>
+        `;
+      }
+
+      itemsContainer.innerHTML = itemsHTML;
+      document.getElementById('receiptTotal').innerText = "Rp " + grandTotal.toLocaleString('id-ID');
       document.getElementById('receiptModal').classList.remove('hidden');
     }
 
@@ -395,7 +441,11 @@
     }
 
     async function processPaymentAndPrint() {
-      const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+      let subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+      const isTaxActive = document.getElementById('taxToggle').checked;
+      const taxAmount = isTaxActive ? Math.round(subtotal * 0.11) : 0;
+      const grandTotal = subtotal + taxAmount;
+      
       const summaryItem = cart.map(i => `${i.name} (x${i.qty})`).join(', ');
 
       try {
@@ -404,13 +454,14 @@
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({
             action: "LOG_TRANSACTION",
-            nama_file: `${summaryItem} - Total: Rp ${subtotal.toLocaleString('id-ID')}`,
+            nama_file: `${summaryItem} - Total: Rp ${grandTotal.toLocaleString('id-ID')} ${isTaxActive ? '(Inc. PPN 11%)' : ''}`,
             status: "Success"
           })
         });
 
         alert("Pembayaran berhasil dan transaksi dicatat ke Spreadsheet!");
         cart = [];
+        document.getElementById('taxToggle').checked = false;
         renderCart();
         document.getElementById('receiptModal').classList.add('hidden');
       } catch (error) {
