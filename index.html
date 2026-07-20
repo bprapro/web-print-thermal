@@ -102,10 +102,18 @@
           <input type="text" id="newProdName" placeholder="Nama Produk *" required class="p-2.5 text-xs bg-white rounded-xl border outline-none focus:ring-2 focus:ring-lime-400">
           <input type="number" id="newProdPrice" placeholder="Harga (Rp) *" required class="p-2.5 text-xs bg-white rounded-xl border outline-none focus:ring-2 focus:ring-lime-400">
         </div>
+        
         <div class="grid grid-cols-2 gap-2">
           <input type="text" id="newProdSku" placeholder="Kode SKU (Opsional)" class="p-2.5 text-xs bg-white rounded-xl border outline-none focus:ring-2 focus:ring-lime-400">
-          <input type="url" id="newProdImage" placeholder="URL Foto Image (Opsional)" class="p-2.5 text-xs bg-white rounded-xl border outline-none focus:ring-2 focus:ring-lime-400">
+          <input type="url" id="newProdImage" placeholder="URL Foto (Opsional)" class="p-2.5 text-xs bg-white rounded-xl border outline-none focus:ring-2 focus:ring-lime-400">
         </div>
+
+        <!-- INPUT UPLOAD FOTO DARI HP/KOMPUTER -->
+        <div class="space-y-1">
+          <label class="text-[10px] font-bold text-gray-500 uppercase">Atau Upload Foto dari Galeri/HP:</label>
+          <input type="file" id="newProdFile" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+        </div>
+
         <button type="submit" id="btnAddProdSubmit" class="w-full py-2.5 bg-black text-white font-bold text-xs rounded-xl hover:bg-gray-800 transition">
           + Simpan Produk Ke Spreadsheet
         </button>
@@ -280,52 +288,34 @@
       document.getElementById('btnCancelEdit').classList.remove('hidden');
     }
 
-    function resetForm() {
-      document.getElementById('editProdId').value = "";
-      document.getElementById('newProdName').value = "";
-      document.getElementById('newProdPrice').value = "";
-      document.getElementById('newProdSku').value = "";
-      document.getElementById('newProdImage').value = "";
+    <form onsubmit="handleSaveProduct(event)" class="bg-gray-50 p-3.5 sm:p-4 rounded-2xl space-y-3">
+        <div class="flex justify-between items-center">
+          <h3 id="formTitle" class="text-xs font-bold text-gray-700 uppercase">Tambah Produk Baru</h3>
+          <button type="button" id="btnCancelEdit" onclick="resetForm()" class="text-[11px] text-red-500 font-semibold hidden hover:underline">Batal Edit</button>
+        </div>
 
-      document.getElementById('formTitle').innerText = "Tambah Produk Baru";
-      document.getElementById('btnAddProdSubmit').innerText = "+ Simpan Produk Ke Spreadsheet";
-      document.getElementById('btnAddProdSubmit').className = "w-full py-2.5 bg-black text-white font-bold text-xs rounded-xl hover:bg-gray-800 transition";
-      document.getElementById('btnCancelEdit').classList.add('hidden');
-    }
+        <input type="hidden" id="editProdId" value="">
 
-    async function handleSaveProduct(e) {
-      e.preventDefault();
-      const btn = document.getElementById('btnAddProdSubmit');
-      const editId = document.getElementById('editProdId').value;
-      const isEdit = editId !== "";
+        <div class="grid grid-cols-2 gap-2">
+          <input type="text" id="newProdName" placeholder="Nama Produk *" required class="p-2.5 text-xs bg-white rounded-xl border outline-none focus:ring-2 focus:ring-lime-400">
+          <input type="number" id="newProdPrice" placeholder="Harga (Rp) *" required class="p-2.5 text-xs bg-white rounded-xl border outline-none focus:ring-2 focus:ring-lime-400">
+        </div>
+        
+        <div class="grid grid-cols-2 gap-2">
+          <input type="text" id="newProdSku" placeholder="Kode SKU (Opsional)" class="p-2.5 text-xs bg-white rounded-xl border outline-none focus:ring-2 focus:ring-lime-400">
+          <input type="url" id="newProdImage" placeholder="URL Foto (Opsional)" class="p-2.5 text-xs bg-white rounded-xl border outline-none focus:ring-2 focus:ring-lime-400">
+        </div>
 
-      btn.innerText = "Menyimpan...";
-      btn.disabled = true;
+        <!-- INPUT UPLOAD FOTO DARI HP/KOMPUTER -->
+        <div class="space-y-1">
+          <label class="text-[10px] font-bold text-gray-500 uppercase">Atau Upload Foto dari Galeri/HP:</label>
+          <input type="file" id="newProdFile" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+        </div>
 
-      const payload = {
-        action: isEdit ? "EDIT_PRODUCT" : "ADD_PRODUCT",
-        id: editId,
-        name: document.getElementById('newProdName').value,
-        price: document.getElementById('newProdPrice').value,
-        sku: document.getElementById('newProdSku').value,
-        image: document.getElementById('newProdImage').value
-      };
-
-      try {
-        await fetch(APPS_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
-        });
-        alert(isEdit ? "Produk berhasil diperbarui!" : "Produk berhasil ditambahkan!");
-        resetForm();
-        await loadProducts();
-      } catch (err) {
-        alert("Gagal menyimpan data produk.");
-      } finally {
-        btn.disabled = false;
-      }
-    }
+        <button type="submit" id="btnAddProdSubmit" class="w-full py-2.5 bg-black text-white font-bold text-xs rounded-xl hover:bg-gray-800 transition">
+          + Simpan Produk Ke Spreadsheet
+        </button>
+      </form>
 
     async function handleDeleteProduct(id) {
       if(!confirm("Yakin ingin menghapus produk ini dari katalog?")) return;
