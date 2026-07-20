@@ -547,6 +547,7 @@
       document.getElementById('btnCancelEdit').classList.remove('hidden');
     }
 
+    // 1. PASTIKAN FUNGSI HANDLE SAVE PRODUK INI MENGGUNAKAN NAMA FUNGSI YANG BENAR
     async function handleSaveProduct(event) {
       event.preventDefault();
       
@@ -561,9 +562,10 @@
       
       if (fileInput && fileInput.files.length > 0) {
         try {
-          base64File = await proccesFileToBase64(fileInput.files[0]);
+          // Memanggil fungsi konversi gambar (Nama fungsi sudah diperbaiki)
+          base64File = await processFileToBase64(fileInput.files[0]);
         } catch (err) {
-          alert("Gagal memproses file gambar.");
+          alert("Gagal memproses file gambar: " + err);
           return;
         }
       }
@@ -576,7 +578,7 @@
         price: Number(price),
         sku: sku,
         image: imageUrl || "",
-        fileData: base64File
+        fileData: base64File // Data base64 yang sudah fix dikirim ke script
       };
 
       try {
@@ -603,28 +605,14 @@
       } catch (err) {
         console.error(err);
         alert("Gagal koneksi ke Spreadsheet.");
-      } finally { // <--- SUDAH DIPERBAIKI DISINI (finally dengan dua huruf 'l')
+      } finally {
         document.getElementById('btnAddProdSubmit').disabled = false;
         document.getElementById('btnAddProdSubmit').innerText = isEdit ? "Simpan Perubahan" : "+ Simpan Produk Ke Spreadsheet";
       }
     }
 
-    async function deleteProduct(id) {
-      if (!confirm("Apakah Anda yakin ingin menghapus produk ini?")) return;
-      
-      try {
-        await fetch(APPS_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "DELETE_PRODUCT", id: id })
-        });
-        await loadProducts();
-      } catch (err) {
-        alert("Gagal menghapus produk.");
-      }
-    }
-
-    function proccesFileToBase64(file) {
+    // 2. GANTI FUNGSI KONVERSI GAMBAR INI (Nama fungsi diubah menjadi 'processFileToBase64' agar sinkron)
+    function processFileToBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -633,7 +621,7 @@
           img.src = event.target.result;
           img.onload = () => {
             const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 600;
+            const MAX_WIDTH = 600; // Kompresi ukuran gambar agar tidak terlalu besar saat dikirim
             let width = img.width;
             let height = img.height;
 
@@ -647,6 +635,7 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
             
+            // Output base64 murni
             resolve(canvas.toDataURL('image/jpeg', 0.7));
           };
         };
