@@ -159,7 +159,7 @@
 
   <!-- MODAL: KERANJANG & CHECKOUT -->
   <div id="cartModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-md max-h-[90vh] flex flex-col p-5 shadow-2xl space-y-4">
+    <div class="bg-white rounded-3xl w-full max-w-md max-h-[95vh] flex flex-col p-5 shadow-2xl space-y-3 overflow-hidden">
       <div class="flex justify-between items-center pb-2 border-b">
         <h2 class="font-bold text-base text-gray-800">Keranjang Belanja</h2>
         <button onclick="closeModal('cartModal')" class="p-1 text-gray-400 hover:text-black">
@@ -167,31 +167,75 @@
         </button>
       </div>
 
-      <div id="cartItems" class="flex-1 overflow-y-auto custom-scroll space-y-3 min-h-[150px] pr-1">
+      <div id="cartItems" class="overflow-y-auto custom-scroll space-y-2 max-h-36 pr-1">
         <!-- Item keranjang diinjeksi JS -->
       </div>
 
-      <div class="border-t pt-3 space-y-3">
-        <div class="flex justify-between items-center font-bold text-sm">
+      <!-- OPSI PEMBAYARAN & PAJAK -->
+      <div class="bg-gray-50 p-3 rounded-2xl space-y-2 border text-xs">
+        <div>
+          <label class="block font-bold text-gray-600 mb-1 text-[11px]">Metode Pembayaran:</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 p-2 bg-white border rounded-xl cursor-pointer hover:border-black transition">
+              <input type="radio" name="paymentMethod" value="Tunai" checked onchange="updateCartUI()" class="accent-black">
+              <span class="font-semibold text-gray-700">Tunai</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 bg-white border rounded-xl cursor-pointer hover:border-black transition">
+              <input type="radio" name="paymentMethod" value="QRIS" onchange="updateCartUI()" class="accent-black">
+              <span class="font-semibold text-gray-700">QRIS</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-gray-600 mb-1 text-[11px]">Opsi Pajak (PPN 11%):</label>
+          <select id="taxOption" onchange="updateCartUI()" class="w-full p-2 bg-white border rounded-xl font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-black">
+            <option value="none">Tanpa Pajak (0%)</option>
+            <option value="inc">Include Pajak (Sudah Termasuk PPN)</option>
+            <option value="exc">Exclude Pajak (Tambah PPN 11%)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="border-t pt-2 space-y-2 flex-1 flex flex-col justify-between overflow-y-auto custom-scroll">
+        <div class="flex justify-between items-center font-bold text-sm px-1">
           <span>Total Pembayaran:</span>
           <span id="cartTotalText" class="text-base text-emerald-600">Rp 0</span>
         </div>
 
         <!-- STRUK THERMAL PREVIEW -->
-        <div id="thermalReceiptPaper" class="w-full bg-yellow-50/60 border border-dashed border-gray-300 p-4 rounded-xl receipt-font text-xs shadow-inner">
-          <div class="text-center font-bold mb-1">TOKO BU AINA</div>
+        <div id="thermalReceiptPaper" class="w-full bg-yellow-50/60 border border-dashed border-gray-300 p-3.5 rounded-xl receipt-font text-xs shadow-inner my-1">
+          <div class="text-center font-bold text-sm">TOKO BU AINA</div>
           <div class="text-center text-[10px] text-gray-500 mb-2">Struk Pembayaran Thermal</div>
-          <div class="border-b border-dashed border-gray-300 my-2"></div>
-          <div id="receiptItems" class="space-y-1 my-2 text-[11px]"></div>
-          <div class="border-b border-dashed border-gray-300 my-2"></div>
-          <div class="flex justify-between font-bold my-1 text-[11px]">
-            <span>TOTAL:</span>
-            <span id="receiptTotal">Rp 0</span>
+          <div class="border-b border-dashed border-gray-300 my-1.5"></div>
+          
+          <div id="receiptItems" class="space-y-1 my-1 text-[11px]"></div>
+          
+          <div class="border-b border-dashed border-gray-300 my-1.5"></div>
+          
+          <div class="space-y-0.5 text-[10px]">
+            <div class="flex justify-between">
+              <span>Subtotal:</span>
+              <span id="receiptSubtotal">Rp 0</span>
+            </div>
+            <div id="receiptTaxRow" class="flex justify-between text-gray-600">
+              <span id="receiptTaxLabel">Pajak (0%):</span>
+              <span id="receiptTax">Rp 0</span>
+            </div>
+            <div class="flex justify-between font-semibold pt-1 border-t border-dashed border-gray-200 text-[11px]">
+              <span>Metode Bayar:</span>
+              <span id="receiptPaymentMethod">Tunai</span>
+            </div>
+            <div class="flex justify-between font-bold text-xs pt-1 text-black">
+              <span>TOTAL:</span>
+              <span id="receiptTotal">Rp 0</span>
+            </div>
           </div>
-          <div class="text-center text-[9px] text-gray-400 mt-3">Terima kasih telah berbelanja!</div>
+          
+          <div class="text-center text-[9px] text-gray-400 mt-2.5">Terima kasih telah berbelanja!</div>
         </div>
 
-        <button onclick="processCheckout()" class="w-full py-3 bg-emerald-600 text-white font-bold text-xs rounded-xl hover:bg-emerald-700 transition flex items-center justify-center gap-2">
+        <button onclick="processCheckout()" class="w-full py-3 bg-emerald-600 text-white font-bold text-xs rounded-xl hover:bg-emerald-700 transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20">
           <i data-lucide="printer" class="w-4 h-4"></i> Cetak Struk & Simpan Transaksi
         </button>
       </div>
@@ -199,7 +243,7 @@
   </div>
 
   <script>
-    // URL Deployment Web App Apps Script Anda
+    // Masukkan URL Google Apps Script Anda di bawah ini:
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwyxgo3OgB73c3fGjxd7_En-BKcKFY_fDjolbRde0TlNA2iIm1y3pTCDTj8YEfVhTHWyA/exec";
 
     let products = [];
@@ -302,21 +346,21 @@
 
       const cartContainer = document.getElementById('cartItems');
       const receiptContainer = document.getElementById('receiptItems');
-      let total = 0;
+      let subtotal = 0;
 
       cartContainer.innerHTML = cart.map((item, index) => {
         const itemTotal = item.price * item.qty;
-        total += itemTotal;
+        subtotal += itemTotal;
         return `
-          <div class="flex justify-between items-center text-xs">
+          <div class="flex justify-between items-center text-xs bg-gray-50 p-2 rounded-xl">
             <div>
-              <p class="font-bold">${item.name}</p>
+              <p class="font-bold text-gray-800">${item.name}</p>
               <p class="text-[10px] text-gray-400">Rp ${item.price.toLocaleString('id-ID')} x ${item.qty}</p>
             </div>
             <div class="flex items-center gap-2">
-              <button onclick="changeQty(${index}, -1)" class="w-6 h-6 bg-gray-100 rounded-lg flex items-center justify-center font-bold">-</button>
-              <span>${item.qty}</span>
-              <button onclick="changeQty(${index}, 1)" class="w-6 h-6 bg-gray-100 rounded-lg flex items-center justify-center font-bold">+</button>
+              <button onclick="changeQty(${index}, -1)" class="w-6 h-6 bg-white border rounded-lg flex items-center justify-center font-bold text-gray-700 hover:bg-gray-100">-</button>
+              <span class="font-bold text-xs">${item.qty}</span>
+              <button onclick="changeQty(${index}, 1)" class="w-6 h-6 bg-white border rounded-lg flex items-center justify-center font-bold text-gray-700 hover:bg-gray-100">+</button>
             </div>
           </div>
         `;
@@ -329,8 +373,39 @@
         </div>
       `).join('');
 
-      document.getElementById('cartTotalText').innerText = `Rp ${total.toLocaleString('id-ID')}`;
-      document.getElementById('receiptTotal').innerText = `Rp ${total.toLocaleString('id-ID')}`;
+      // Kalkulasi Pajak
+      const taxOption = document.getElementById('taxOption').value;
+      let taxAmount = 0;
+      let grandTotal = subtotal;
+      let taxLabel = "Pajak (0%):";
+
+      if (taxOption === "exc") {
+        taxAmount = Math.round(subtotal * 0.11);
+        grandTotal = subtotal + taxAmount;
+        taxLabel = "Pajak Excl (11%):";
+      } else if (taxOption === "inc") {
+        taxAmount = Math.round(subtotal - (subtotal / 1.11));
+        grandTotal = subtotal; // Total tetap sama
+        taxLabel = "Pajak Incl (11%):";
+      }
+
+      // Ambil Metode Pembayaran
+      const paymentMethods = document.getElementsByName('paymentMethod');
+      let selectedMethod = "Tunai";
+      for (const radio of paymentMethods) {
+        if (radio.checked) {
+          selectedMethod = radio.value;
+          break;
+        }
+      }
+
+      // Update Tampilan Struk & UI
+      document.getElementById('cartTotalText').innerText = `Rp ${grandTotal.toLocaleString('id-ID')}`;
+      document.getElementById('receiptSubtotal').innerText = `Rp ${subtotal.toLocaleString('id-ID')}`;
+      document.getElementById('receiptTaxLabel').innerText = taxLabel;
+      document.getElementById('receiptTax').innerText = `Rp ${taxAmount.toLocaleString('id-ID')}`;
+      document.getElementById('receiptPaymentMethod').innerText = selectedMethod;
+      document.getElementById('receiptTotal').innerText = `Rp ${grandTotal.toLocaleString('id-ID')}`;
     }
 
     function changeQty(index, delta) {
@@ -386,7 +461,6 @@
       }
     }
 
-    // Fungsi konversi file lokal ke Base64
     function convertFileToBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -458,6 +532,16 @@
         pdf.save(`Struk_Toko_Bu_Aina_${Date.now()}.pdf`);
       });
 
+      // Ambil metode bayar
+      const paymentMethods = document.getElementsByName('paymentMethod');
+      let selectedMethod = "Tunai";
+      for (const radio of paymentMethods) {
+        if (radio.checked) {
+          selectedMethod = radio.value;
+          break;
+        }
+      }
+
       // Simpan Log Transaksi
       try {
         await fetch(APPS_SCRIPT_URL, {
@@ -465,8 +549,8 @@
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({
             action: "LOG_TRANSACTION",
-            nama_file: `TRX_${Date.now()}`,
-            status: "BERHASIL"
+            nama_file: `TRX_${Date.now()} (${selectedMethod})`,
+            status: "Printed & Saved"
           })
         });
         alert("Transaksi berhasil dicetak dan dicatat!");
