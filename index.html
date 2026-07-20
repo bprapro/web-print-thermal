@@ -16,7 +16,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700&family=Space+Mono:wght=400;700&display=swap');
     
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
@@ -256,382 +256,381 @@
 
   <script>
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbweLZ-WpjkI9XnEUim_sBw8Qt8ogbWL8QSso6cbxfRqxJtKYUlbrvhbii9QPWzJWGPI6w/exec";
-const CUSTOM_QRIS_IMAGE_URL = "https://drive.google.com/uc?export=view&id=1NEQMv9z--jSQgYE1j_otJJaFOnQkmU26";
+    const CUSTOM_QRIS_IMAGE_URL = "https://drive.google.com/uc?export=view&id=1NEQMv9z--jSQgYE1j_otJJaFOnQkmU26";
 
-let products = [];
-let cart = [];
+    let products = [];
+    let cart = [];
 
-lucide.createIcons();
+    lucide.createIcons();
 
-window.onload = function() {
-  loadProducts();
-};
-
-function toggleSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('sidebarOverlay');
-  sidebar.classList.toggle('-translate-x-full');
-  overlay.classList.toggle('hidden');
-}
-
-function openModal(id) {
-  document.getElementById(id).classList.remove('hidden');
-}
-
-function closeModal(id) {
-  document.getElementById(id).classList.add('hidden');
-}
-
-async function loadProducts() {
-  try {
-    const response = await fetch(APPS_SCRIPT_URL);
-    products = await response.json();
-    renderCatalog();
-    renderManageList();
-  } catch (err) {
-    console.error("Gagal memuat produk:", err);
-  }
-}
-
-function renderCatalog() {
-  const grid = document.getElementById('productGrid');
-  if (products.length === 0) {
-    grid.innerHTML = `<p class="col-span-full text-center py-10 text-gray-400 text-sm">Belum ada produk. Tambahkan produk di menu Kelola Produk.</p>`;
-    return;
-  }
-
-  grid.innerHTML = products.map(p => `
-    <div onclick="addToCart('${p.name}', ${p.price})" class="bg-white p-3 rounded-3xl shadow-sm hover:shadow-md cursor-pointer transition flex flex-col justify-between space-y-2 border border-gray-50">
-      <img src="${p.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=200'}" class="w-full h-28 object-cover rounded-2xl bg-gray-100" alt="${p.name}">
-      <div>
-        <h3 class="font-bold text-xs text-gray-800 line-clamp-1">${p.name}</h3>
-        <p class="text-[10px] text-gray-400">SKU: ${p.sku || '-'}</p>
-        <p class="text-xs font-bold text-emerald-600 mt-1">Rp ${Number(p.price).toLocaleString('id-ID')}</p>
-      </div>
-    </div>
-  `).join('');
-}
-
-function renderManageList() {
-  const list = document.getElementById('manageProductList');
-  list.innerHTML = products.map(p => `
-    <div class="flex items-center justify-between bg-white p-2.5 rounded-2xl border text-xs">
-      <div class="flex items-center gap-2">
-        <img src="${p.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=50'}" class="w-8 h-8 object-cover rounded-lg">
-        <div>
-          <p class="font-bold text-gray-800">${p.name}</p>
-          <p class="text-[10px] text-gray-400">Rp ${Number(p.price).toLocaleString('id-ID')}</p>
-        </div>
-      </div>
-      <div class="flex gap-1">
-        <button onclick="editProduct('${p.id}')" class="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-        <button onclick="deleteProduct('${p.id}')" class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-      </div>
-    </div>
-  `).join('');
-  lucide.createIcons();
-}
-
-function addToCart(name, price) {
-  const exist = cart.find(item => item.name === name);
-  if (exist) {
-    exist.qty += 1;
-  } else {
-    cart.push({ name, price, qty: 1 });
-  }
-  updateCartUI();
-}
-
-function updateCartUI() {
-  const badge = document.getElementById('cartBadge');
-  const totalQty = cart.reduce((acc, item) => acc + item.qty, 0);
-  
-  if (totalQty > 0) {
-    badge.innerText = totalQty;
-    badge.classList.remove('hidden');
-    badge.classList.add('flex');
-  } else {
-    badge.classList.add('hidden');
-  }
-
-  const cartContainer = document.getElementById('cartItems');
-  const receiptContainer = document.getElementById('receiptItems');
-  let subtotal = 0;
-
-  cartContainer.innerHTML = cart.map((item, index) => {
-    subtotal += (item.price * item.qty);
-    return `
-      <div class="flex justify-between items-center text-xs bg-gray-50 p-2 rounded-xl">
-        <div>
-          <p class="font-bold text-gray-800">${item.name}</p>
-          <p class="text-[10px] text-gray-400">Rp ${item.price.toLocaleString('id-ID')} x ${item.qty}</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <button onclick="changeQty(${index}, -1)" class="w-6 h-6 bg-white border rounded-lg flex items-center justify-center font-bold text-gray-700 hover:bg-gray-100">-</button>
-          <span class="font-bold text-xs">${item.qty}</span>
-          <button onclick="changeQty(${index}, 1)" class="w-6 h-6 bg-white border rounded-lg flex items-center justify-center font-bold text-gray-700 hover:bg-gray-100">+</button>
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  receiptContainer.innerHTML = cart.map(item => `
-    <div class="flex justify-between">
-      <span>${item.name} x${item.qty}</span>
-      <span>Rp ${(item.price * item.qty).toLocaleString('id-ID')}</span>
-    </div>
-  `).join('');
-
-  const taxOption = document.getElementById('taxOption').value;
-  let taxAmount = 0;
-  let grandTotal = subtotal;
-  let taxLabel = "Pajak (0%):";
-
-  if (taxOption === "exc") {
-    taxAmount = Math.round(subtotal * 0.11);
-    grandTotal = subtotal + taxAmount;
-    taxLabel = "Pajak Excl (11%):";
-  } else if (taxOption === "inc") {
-    taxAmount = Math.round(subtotal - (subtotal / 1.11));
-    grandTotal = subtotal;
-    taxLabel = "Pajak Incl (11%):";
-  }
-
-  const paymentMethods = document.getElementsByName('paymentMethod');
-  let selectedMethod = "Tunai";
-  for (const radio of paymentMethods) {
-    if (radio.checked) {
-      selectedMethod = radio.value;
-      break;
-    }
-  }
-
-  const qrisContainer = document.getElementById('qrisContainer');
-  const qrisImage = document.getElementById('qrisImage');
-  const qrisTotalNotice = document.getElementById('qrisTotalNotice');
-
-  if (selectedMethod === "QRIS") {
-    qrisContainer.classList.remove('hidden');
-    qrisTotalNotice.innerText = `Rp ${grandTotal.toLocaleString('id-ID')}`;
-    
-    if (CUSTOM_QRIS_IMAGE_URL.trim() !== "") {
-      qrisImage.src = CUSTOM_QRIS_IMAGE_URL;
-    } else {
-      const qrText = encodeURIComponent(`TOKO BU AINA - Total: Rp ${grandTotal.toLocaleString('id-ID')}`);
-      qrisImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${qrText}`;
-    }
-  } else {
-    qrisContainer.classList.add('hidden');
-  }
-
-  document.getElementById('cartTotalText').innerText = `Rp ${grandTotal.toLocaleString('id-ID')}`;
-  document.getElementById('receiptSubtotal').innerText = `Rp ${subtotal.toLocaleString('id-ID')}`;
-  document.getElementById('receiptTaxLabel').innerText = taxLabel;
-  document.getElementById('receiptTax').innerText = `Rp ${taxAmount.toLocaleString('id-ID')}`;
-  document.getElementById('receiptPaymentMethod').innerText = selectedMethod;
-  document.getElementById('receiptTotal').innerText = `Rp ${grandTotal.toLocaleString('id-ID')}`;
-}
-
-function changeQty(index, delta) {
-  cart[index].qty += delta;
-  if (cart[index].qty <= 0) {
-    cart.splice(index, 1);
-  }
-  updateCartUI();
-}
-
-function resetForm() {
-  document.getElementById('editProdId').value = "";
-  document.getElementById('newProdName').value = "";
-  document.getElementById('newProdPrice').value = "";
-  document.getElementById('newProdSku').value = "";
-  document.getElementById('newProdImage').value = "";
-  
-  const fileInput = document.getElementById('newProdFile');
-  if (fileInput) fileInput.value = "";
-
-  document.getElementById('formTitle').innerText = "Tambah Produk Baru";
-  document.getElementById('btnAddProdSubmit').innerText = "+ Simpan Produk Ke Spreadsheet";
-  document.getElementById('btnAddProdSubmit').className = "w-full py-2.5 bg-black text-white font-bold text-xs rounded-xl hover:bg-gray-800 transition";
-  document.getElementById('btnCancelEdit').classList.add('hidden');
-}
-
-function editProduct(id) {
-  const prod = products.find(p => p.id == id);
-  if (!prod) return;
-
-  document.getElementById('editProdId').value = prod.id;
-  document.getElementById('newProdName').value = prod.name;
-  document.getElementById('newProdPrice').value = prod.price;
-  document.getElementById('newProdSku').value = prod.sku;
-  document.getElementById('newProdImage').value = prod.image;
-
-  document.getElementById('formTitle').innerText = "Edit Produk";
-  document.getElementById('btnAddProdSubmit').innerText = "Simpan Perubahan";
-  document.getElementById('btnAddProdSubmit').className = "w-full py-2.5 bg-blue-600 text-white font-bold text-xs rounded-xl hover:bg-blue-700 transition";
-  document.getElementById('btnCancelEdit').classList.remove('hidden');
-}
-
-async function handleSaveProduct(event) {
-  event.preventDefault();
-  
-  const id = document.getElementById('editProdId').value;
-  const name = document.getElementById('newProdName').value;
-  const price = document.getElementById('newProdPrice').value;
-  const sku = document.getElementById('newProdSku').value;
-  const imageUrl = document.getElementById('newProdImage').value; // Ini untuk URL teks biasa
-  
-  const fileInput = document.getElementById('newProdFile');
-  let base64File = null;
-  
-  // Jika ada file lokal yang diupload, konversi ke Base64 untuk parameter fileData
-  if (fileInput && fileInput.files.length > 0) {
-    try {
-      base64File = await proccesFileToBase64(fileInput.files[0]);
-    } catch (err) {
-      alert("Gagal memproses file gambar.");
-      return;
-    }
-  }
-
-  const isEdit = id !== "";
-  const payload = {
-    action: isEdit ? "EDIT_PRODUCT" : "ADD_PRODUCT",
-    name: name,
-    price: Number(price),
-    sku: sku,
-    image: imageUrl,       // URL gambar (jika input via teks)
-    fileData: base64File   // Data gambar (jika upload file dari HP/PC)
-  };
-
-  if (isEdit) payload.id = id;
-
-  try {
-    document.getElementById('btnAddProdSubmit').innerText = "Sedang Menyimpan...";
-    document.getElementById('btnAddProdSubmit').disabled = true;
-
-    const response = await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload)
-    });
-
-    const resData = await response.json();
-    
-    if (resData.status === "SUCCESS") {
-      alert(isEdit ? "Produk berhasil diperbarui!" : "Produk berhasil ditambahkan!");
-      resetForm();
-      await loadProducts();
-    } else {
-      alert("Gagal menyimpan: " + resData.status);
-    }
-  } catch (err) {
-    console.error(err);
-    alert("Gagal menyimpan produk.");
-  } finally {
-    document.getElementById('btnAddProdSubmit').disabled = false;
-    document.getElementById('btnAddProdSubmit').innerText = isEdit ? "Simpan Perubahan" : "+ Simpan Produk Ke Spreadsheet";
-  }
-}
-
-async function deleteProduct(id) {
-  if (!confirm("Apakah Anda yakin ingin menghapus produk ini?")) return;
-  
-  try {
-    await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ action: "DELETE_PRODUCT", id: id })
-    });
-    await loadProducts();
-  } catch (err) {
-    alert("Gagal menghapus produk.");
-  }
-}
-
-function proccesFileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target.result;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 600;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > MAX_WIDTH) {
-          height *= MAX_WIDTH / width;
-          width = MAX_WIDTH;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        resolve(canvas.toDataURL('image/jpeg', 0.7));
-      };
+    window.onload = function() {
+      loadProducts();
     };
-    reader.onerror = (error) => reject(error);
-  });
-}
 
-async function processCheckout() {
-  if (cart.length === 0) {
-    alert("Keranjang masih kosong!");
-    return;
-  }
-
-  const receipt = document.getElementById('thermalReceiptPaper');
-  const paymentMethods = document.getElementsByName('paymentMethod');
-  let selectedMethod = "Tunai";
-  
-  for (const radio of paymentMethods) {
-    if (radio.checked) {
-      selectedMethod = radio.value;
-      break;
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      sidebar.classList.toggle('-translate-x-full');
+      overlay.classList.toggle('hidden');
     }
-  }
-  
-  // Fitur cetak struk tinggi dinamis (anti-terpotong)
-  html2canvas(receipt, { scale: 2 }).then(canvas => {
-    const imgData = canvas.toDataURL('image/png');
-    const { jsPDF } = window.jspdf;
-    
-    const imgWidth = 80; 
-    const pageHeight = (canvas.height * imgWidth) / canvas.width; 
 
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: [imgWidth, pageHeight]
-    });
-    
-    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, pageHeight);
-    pdf.save(`Struk_Toko_Bu_Aina_${Date.now()}.pdf`);
-  });
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
 
-  try {
-    await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({
-        action: "LOG_TRANSACTION",
-        nama_file: `TRX_${Date.now()} (${selectedMethod})`,
-        status: "Printed & Saved"
-      })
-    });
-    alert("Transaksi berhasil dicetak dan dicatat!");
-    cart = [];
-    updateCartUI();
-    closeModal('cartModal');
-  } catch (err) {
-    alert("Gagal mencatat transaksi.");
-  }
-}
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    async function loadProducts() {
+      try {
+        const response = await fetch(APPS_SCRIPT_URL);
+        products = await response.json();
+        renderCatalog();
+        renderManageList();
+      } catch (err) {
+        console.error("Gagal memuat produk:", err);
+      }
+    }
+
+    function renderCatalog() {
+      const grid = document.getElementById('productGrid');
+      if (products.length === 0) {
+        grid.innerHTML = `<p class="col-span-full text-center py-10 text-gray-400 text-sm">Belum ada produk. Tambahkan produk di menu Kelola Produk.</p>`;
+        return;
+      }
+
+      grid.innerHTML = products.map(p => `
+        <div onclick="addToCart('${p.name}', ${p.price})" class="bg-white p-3 rounded-3xl shadow-sm hover:shadow-md cursor-pointer transition flex flex-col justify-between space-y-2 border border-gray-50">
+          <img src="${p.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=200'}" class="w-full h-28 object-cover rounded-2xl bg-gray-100" alt="${p.name}">
+          <div>
+            <h3 class="font-bold text-xs text-gray-800 line-clamp-1">${p.name}</h3>
+            <p class="text-[10px] text-gray-400">SKU: ${p.sku || '-'}</p>
+            <p class="text-xs font-bold text-emerald-600 mt-1">Rp ${Number(p.price).toLocaleString('id-ID')}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderManageList() {
+      const list = document.getElementById('manageProductList');
+      list.innerHTML = products.map(p => `
+        <div class="flex items-center justify-between bg-white p-2.5 rounded-2xl border text-xs">
+          <div class="flex items-center gap-2">
+            <img src="${p.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=50'}" class="w-8 h-8 object-cover rounded-lg">
+            <div>
+              <p class="font-bold text-gray-800">${p.name}</p>
+              <p class="text-[10px] text-gray-400">Rp ${Number(p.price).toLocaleString('id-ID')}</p>
+            </div>
+          </div>
+          <div class="flex gap-1">
+            <button onclick="editProduct('${p.id}')" class="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+            <button onclick="deleteProduct('${p.id}')" class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function addToCart(name, price) {
+      const exist = cart.find(item => item.name === name);
+      if (exist) {
+        exist.qty += 1;
+      } else {
+        cart.push({ name, price, qty: 1 });
+      }
+      updateCartUI();
+    }
+
+    function updateCartUI() {
+      const badge = document.getElementById('cartBadge');
+      const totalQty = cart.reduce((acc, item) => acc + item.qty, 0);
+      
+      if (totalQty > 0) {
+        badge.innerText = totalQty;
+        badge.classList.remove('hidden');
+        badge.classList.add('flex');
+      } else {
+        badge.classList.add('hidden');
+      }
+
+      const cartContainer = document.getElementById('cartItems');
+      const receiptContainer = document.getElementById('receiptItems');
+      let subtotal = 0;
+
+      cartContainer.innerHTML = cart.map((item, index) => {
+        subtotal += (item.price * item.qty);
+        return `
+          <div class="flex justify-between items-center text-xs bg-gray-50 p-2 rounded-xl">
+            <div>
+              <p class="font-bold text-gray-800">${item.name}</p>
+              <p class="text-[10px] text-gray-400">Rp ${item.price.toLocaleString('id-ID')} x ${item.qty}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="changeQty(${index}, -1)" class="w-6 h-6 bg-white border rounded-lg flex items-center justify-center font-bold text-gray-700 hover:bg-gray-100">-</button>
+              <span class="font-bold text-xs">${item.qty}</span>
+              <button onclick="changeQty(${index}, 1)" class="w-6 h-6 bg-white border rounded-lg flex items-center justify-center font-bold text-gray-700 hover:bg-gray-100">+</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      receiptContainer.innerHTML = cart.map(item => `
+        <div class="flex justify-between">
+          <span>${item.name} x${item.qty}</span>
+          <span>Rp ${(item.price * item.qty).toLocaleString('id-ID')}</span>
+        </div>
+      `).join('');
+
+      const taxOption = document.getElementById('taxOption').value;
+      let taxAmount = 0;
+      let grandTotal = subtotal;
+      let taxLabel = "Pajak (0%):";
+
+      if (taxOption === "exc") {
+        taxAmount = Math.round(subtotal * 0.11);
+        grandTotal = subtotal + taxAmount;
+        taxLabel = "Pajak Excl (11%):";
+      } else if (taxOption === "inc") {
+        taxAmount = Math.round(subtotal - (subtotal / 1.11));
+        grandTotal = subtotal;
+        taxLabel = "Pajak Incl (11%):";
+      }
+
+      const paymentMethods = document.getElementsByName('paymentMethod');
+      let selectedMethod = "Tunai";
+      for (const radio of paymentMethods) {
+        if (radio.checked) {
+          selectedMethod = radio.value;
+          break;
+        }
+      }
+
+      const qrisContainer = document.getElementById('qrisContainer');
+      const qrisImage = document.getElementById('qrisImage');
+      const qrisTotalNotice = document.getElementById('qrisTotalNotice');
+
+      if (selectedMethod === "QRIS") {
+        qrisContainer.classList.remove('hidden');
+        qrisTotalNotice.innerText = `Rp ${grandTotal.toLocaleString('id-ID')}`;
+        
+        if (CUSTOM_QRIS_IMAGE_URL.trim() !== "") {
+          qrisImage.src = CUSTOM_QRIS_IMAGE_URL;
+        } else {
+          const qrText = encodeURIComponent(`TOKO BU AINA - Total: Rp ${grandTotal.toLocaleString('id-ID')}`);
+          qrisImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${qrText}`;
+        }
+      } else {
+        qrisContainer.classList.add('hidden');
+      }
+
+      document.getElementById('cartTotalText').innerText = `Rp ${grandTotal.toLocaleString('id-ID')}`;
+      document.getElementById('receiptSubtotal').innerText = `Rp ${subtotal.toLocaleString('id-ID')}`;
+      document.getElementById('receiptTaxLabel').innerText = taxLabel;
+      document.getElementById('receiptTax').innerText = `Rp ${taxAmount.toLocaleString('id-ID')}`;
+      document.getElementById('receiptPaymentMethod').innerText = selectedMethod;
+      document.getElementById('receiptTotal').innerText = `Rp ${grandTotal.toLocaleString('id-ID')}`;
+    }
+
+    function changeQty(index, delta) {
+      cart[index].qty += delta;
+      if (cart[index].qty <= 0) {
+        cart.splice(index, 1);
+      }
+      updateCartUI();
+    }
+
+    function resetForm() {
+      document.getElementById('editProdId').value = "";
+      document.getElementById('newProdName').value = "";
+      document.getElementById('newProdPrice').value = "";
+      document.getElementById('newProdSku').value = "";
+      document.getElementById('newProdImage').value = "";
+      
+      const fileInput = document.getElementById('newProdFile');
+      if (fileInput) fileInput.value = "";
+
+      document.getElementById('formTitle').innerText = "Tambah Produk Baru";
+      document.getElementById('btnAddProdSubmit').innerText = "+ Simpan Produk Ke Spreadsheet";
+      document.getElementById('btnAddProdSubmit').className = "w-full py-2.5 bg-black text-white font-bold text-xs rounded-xl hover:bg-gray-800 transition";
+      document.getElementById('btnCancelEdit').classList.add('hidden');
+    }
+
+    function editProduct(id) {
+      const prod = products.find(p => p.id == id);
+      if (!prod) return;
+
+      document.getElementById('editProdId').value = prod.id;
+      document.getElementById('newProdName').value = prod.name;
+      document.getElementById('newProdPrice').value = prod.price;
+      document.getElementById('newProdSku').value = prod.sku;
+      document.getElementById('newProdImage').value = prod.image;
+
+      document.getElementById('formTitle').innerText = "Edit Produk";
+      document.getElementById('btnAddProdSubmit').innerText = "Simpan Perubahan";
+      document.getElementById('btnAddProdSubmit').className = "w-full py-2.5 bg-blue-600 text-white font-bold text-xs rounded-xl hover:bg-blue-700 transition";
+      document.getElementById('btnCancelEdit').classList.remove('hidden');
+    }
+
+    async function handleSaveProduct(event) {
+      event.preventDefault();
+      
+      const id = document.getElementById('editProdId').value;
+      const name = document.getElementById('newProdName').value;
+      const price = document.getElementById('newProdPrice').value;
+      const sku = document.getElementById('newProdSku').value;
+      const imageUrl = document.getElementById('newProdImage').value;
+      
+      const fileInput = document.getElementById('newProdFile');
+      let base64File = null;
+      
+      if (fileInput && fileInput.files.length > 0) {
+        try {
+          base64File = await proccesFileToBase64(fileInput.files[0]);
+        } catch (err) {
+          alert("Gagal memproses file gambar.");
+          return;
+        }
+      }
+
+      const isEdit = id !== "";
+      const payload = {
+        action: isEdit ? "UPDATE_PRODUCT" : "ADD_PRODUCT",
+        id: id || undefined,
+        name: name,
+        price: Number(price),
+        sku: sku,
+        image: imageUrl || "",
+        fileData: base64File
+      };
+
+      try {
+        document.getElementById('btnAddProdSubmit').innerText = "Sedang Menyimpan...";
+        document.getElementById('btnAddProdSubmit').disabled = true;
+
+        const response = await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+
+        const resData = await response.json();
+        
+        if (resData.status === "SUCCESS" || resData.success === true) {
+          alert("Berhasil menyimpan ke Spreadsheet!");
+          resetForm();
+          await loadProducts();
+        } else {
+          alert("Respon sistem: " + (resData.message || resData.status));
+          resetForm();
+          await loadProducts();
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Gagal koneksi ke Spreadsheet.");
+      } finally {
+        document.getElementById('btnAddProdSubmit').disabled = false;
+        document.getElementById('btnAddProdSubmit').innerText = isEdit ? "Simpan Perubahan" : "+ Simpan Produk Ke Spreadsheet";
+      }
+    }
+
+    async function deleteProduct(id) {
+      if (!confirm("Apakah Anda yakin ingin menghapus produk ini?")) return;
+      
+      try {
+        await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "DELETE_PRODUCT", id: id })
+        });
+        await loadProducts();
+      } catch (err) {
+        alert("Gagal menghapus produk.");
+      }
+    }
+
+    function proccesFileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+          const img = new Image();
+          img.src = event.target.result;
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 600;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            resolve(canvas.toDataURL('image/jpeg', 0.7));
+          };
+        };
+        reader.onerror = (error) => reject(error);
+      });
+    }
+
+    async function processCheckout() {
+      if (cart.length === 0) {
+        alert("Keranjang masih kosong!");
+        return;
+      }
+
+      const receipt = document.getElementById('thermalReceiptPaper');
+      const paymentMethods = document.getElementsByName('paymentMethod');
+      let selectedMethod = "Tunai";
+      
+      for (const radio of paymentMethods) {
+        if (radio.checked) {
+          selectedMethod = radio.value;
+          break;
+        }
+      }
+      
+      html2canvas(receipt, { scale: 2 }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        
+        const imgWidth = 80; 
+        const pageHeight = (canvas.height * imgWidth) / canvas.width; 
+
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: [imgWidth, pageHeight]
+        });
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, pageHeight);
+        pdf.save(`Struk_Toko_Bu_Aina_${Date.now()}.pdf`);
+      });
+
+      try {
+        await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "LOG_TRANSACTION",
+            nama_file: `TRX_${Date.now()} (${selectedMethod})`,
+            status: "Printed & Saved"
+          })
+        });
+        alert("Transaksi berhasil dicetak dan dicatat!");
+        cart = [];
+        updateCartUI();
+        closeModal('cartModal');
+      } catch (err) {
+        alert("Gagal mencatat transaksi.");
+      }
+    }
   </script>
 </body>
 </html>
