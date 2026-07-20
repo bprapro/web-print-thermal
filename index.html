@@ -499,55 +499,96 @@
       }
     }
 
-    function convertFileToBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-      });
-    }
+    // Fungsi untuk mengecilkan (kompres) gambar HP sebelum diupload
+function compressAndConvertToBase64(file, maxWidth = 600, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
 
-    async function handleSaveProduct(e) {
-      e.preventDefault();
-      const btn = document.getElementById('btnAddProdSubmit');
-      const editId = document.getElementById('editProdId').value;
-      const isEdit = editId !== "";
-      const fileInput = document.getElementById('newProdFile');
+        // Resize proporsional jika lebar melebihi maxWidth (600px)
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
 
-      btn.innerText = "Mengunggah & Menyimpan...";
-      btn.disabled = true;
+        canvas.width = width;
+        canvas.height = height;
 
-      let base64File = null;
-      if (fileInput.files.length > 0) {
-        base64File = await convertFileToBase64(fileInput.files[0]);
-      }
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
 
-      const payload = {
-        action: isEdit ? "EDIT_PRODUCT" : "ADD_PRODUCT",
-        id: editId,
-        name: document.getElementById('newProdName').value,
-        price: document.getElementById('newProdPrice').value,
-        sku: document.getElementById('newProdSku').value,
-        image: document.getElementById('newProdImage').value,
-        fileData: base64File
+        // Kompres ke JPEG dengan kualitas 70%
+        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedBase64);
       };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+}
 
-      try {
-        await fetch(APPS_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
-        });
-        alert(isEdit ? "Produk berhasil diperbarui!" : "Produk berhasil ditambahkan!");
-        resetForm();
-        await loadProducts();
-      } catch (err) {
-        alert("Gagal menyimpan data produk.");
-      } finally {
-        btn.disabled = false;
-      }
+// Fungsi Simpan Produk yang Sudah Memakai Kompresi Gambar
+async function handleSaveProduct(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btnAddProdSubmit');
+  const editId = document.getElementById('editProdId').value;
+  const isEdit = editId !== "";
+  const fileInput = document.getElementById('newProdFile');
+
+  btn.innerText = "Mengompres & Menyimpan...";
+  btn.disabled = true;
+
+  let base64File = null;
+  
+  // Jika ada file gambar dari HP / Galeri
+  if (fileInput.files.length > 0) {
+    try {
+      // Kompres gambar otomatis sebelum dikirim
+      base64File = await compressAndConvertToBase64(fileInput.files[0]);
+    } catch (err) {
+      console.error("Gagal mengompres gambar:", err);
     }
+  }
+
+  const payload = {
+    action: isEdit ? "EDIT_PRODUCT" : "ADD_PRODUCT",
+    id: editId,
+    name: document.getElementById('newProdName').value,
+    price: document.getElementById('newProdPrice').value,
+    sku: document.getElementById('newProdSku').value,
+    image: document.getElementById('newProdImage').value,
+    fileData: base64File
+  };
+
+  try {
+    const response = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    });
+    
+    const resData = await response.json();
+    
+    if (resData.status === "SUCCESS") {
+      alert(isEdit ? "Produk berhasil diperbarui!" : "Produk berhasil ditambahkan!");
+      resetForm();
+      await loadProducts();
+    } else {
+      alert("Gagal menyimpan ke Spreadsheet.");
+    }
+  } catch (err) {
+    alert("Terjadi kesalahan saat mengunggah. Coba lagi.");
+  } finally {
+    btn.disabled = false;
+  }
+}
 
     async function processCheckout() {
       if (cart.length === 0) {
