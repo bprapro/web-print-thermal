@@ -603,7 +603,7 @@
       } catch (err) {
         console.error(err);
         alert("Gagal koneksi ke Spreadsheet.");
-      } finaly {
+      } finally { // <--- SUDAH DIPERBAIKI DISINI (finally dengan dua huruf 'l')
         document.getElementById('btnAddProdSubmit').disabled = false;
         document.getElementById('btnAddProdSubmit').innerText = isEdit ? "Simpan Perubahan" : "+ Simpan Produk Ke Spreadsheet";
       }
