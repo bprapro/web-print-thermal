@@ -272,7 +272,7 @@
 
     let products = [];
     let cart = [];
-    let bleCharacteristic = null; // Menyimpan objek bluetooth printer
+    let bleCharacteristic = null;
 
     lucide.createIcons();
 
@@ -297,14 +297,13 @@
 
     async function connectBluetooth() {
       try {
-        // Mengubah filter agar mendeteksi SEMUA perangkat bluetooth di sekitar
         const device = await navigator.bluetooth.requestDevice({
           acceptAllDevices: true,
           optionalServices: [
             '000018f0-0000-1000-8000-00805f9b34fb', 
             '0000ffe0-0000-1000-8000-00805f9b34fb',
             '000018f1-0000-1000-8000-00805f9b34fb',
-            '49535343-fe7d-4ae5-8fa9-9fafd205e455' // UUID tambahan untuk printer RPP02N / M58
+            '49535343-fe7d-4ae5-8fa9-9fafd205e455'
           ]
         });
         
@@ -344,10 +343,7 @@
       }
       try {
         const encoder = new TextEncoder();
-        // Format text dasar dengan tambahan spasi pemotong kertas kosong di bawah struk (Feed)
         const bytes = encoder.encode(text + "\n\n\n\n");
-        
-        // Kirim data dalam ukuran chunk (potongan) kecil maksimal 20 bytes (standar batasan BLE)
         const chunkSize = 20;
         for (let i = 0; i < bytes.length; i += chunkSize) {
           const chunk = bytes.slice(i, i + chunkSize);
@@ -607,7 +603,7 @@
       } catch (err) {
         console.error(err);
         alert("Gagal koneksi ke Spreadsheet.");
-      } finally {
+      } finaly {
         document.getElementById('btnAddProdSubmit').disabled = false;
         document.getElementById('btnAddProdSubmit').innerText = isEdit ? "Simpan Perubahan" : "+ Simpan Produk Ke Spreadsheet";
       }
@@ -675,7 +671,6 @@
         }
       }
 
-      // Hitung Data untuk Printer Text
       let subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
       const taxOption = document.getElementById('taxOption').value;
       let taxAmount = 0;
@@ -693,7 +688,6 @@
       }
       
       if (mode === 'pdf') {
-        // Mode 1: Ekspor File PDF biasa
         html2canvas(receipt, { scale: 2 }).then(canvas => {
           const imgData = canvas.toDataURL('image/png');
           const { jsPDF } = window.jspdf;
@@ -711,15 +705,13 @@
           pdf.save(`Struk_Toko_Bu_Aina_${Date.now()}.pdf`);
         });
       } else if (mode === 'bluetooth') {
-        // Mode 2: Cetak Langsung Teks via Bluetooth ESC/POS (Lebih cepat & hemat baterai)
         if (!bleCharacteristic) {
           alert("Printer Bluetooth belum terhubung!");
           return;
         }
 
-        // Susun struktur struk teks tulisan biasa (Rata 32 karakter standar printer 58mm)
         let receiptText = "";
-        receiptText += "     TOKO BU AINA      \n";
+        receiptText += "      TOKO BU AINA      \n";
         receiptText += "Struk Pembayaran Thermal\n";
         receiptText += "--------------------------------\n";
         
@@ -741,10 +733,9 @@
         receiptText += "  Terima kasih telah berbelanja \n";
 
         const printSuccess = await sendToPrinterBluetooth(receiptText);
-        if (!printSuccess) return; // batalkan log jika printer gagal total
+        if (!printSuccess) return;
       }
 
-      // Kirim Data Transaksi ke Google Sheets Apps Script
       try {
         await fetch(APPS_SCRIPT_URL, {
           method: "POST",
