@@ -548,7 +548,6 @@ async function handleSaveProduct(e) {
   
   if (fileInput.files.length > 0) {
     try {
-      // Menggunakan fungsi kompresi yang sudah Anda miliki sebelumnya
       base64File = await compressAndConvertToBase64(fileInput.files[0]);
     } catch (err) {
       console.error("Gagal mengompres gambar:", err);
@@ -566,14 +565,11 @@ async function handleSaveProduct(e) {
   };
 
   try {
-    // PERBAIKAN UTAMA: Mengirim menggunakan URLSearchParams / Form Data agar Base64 tidak korup/hilang
-    const formBody = new URLSearchParams();
-    formBody.append("jsonData", JSON.stringify(payload));
-
+    // Kembali menggunakan text/plain JSON murni untuk menghindari limitasi ukuran form
     const response = await fetch(APPS_SCRIPT_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formBody
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
     });
     
     const resData = await response.json();
@@ -586,7 +582,8 @@ async function handleSaveProduct(e) {
       alert("Gagal menyimpan ke Spreadsheet: " + resData.status);
     }
   } catch (err) {
-    alert("Terjadi kesalahan saat mengunggah. Coba lagi.");
+    console.error(err);
+    alert("Terjadi kesalahan saat mengunggah. Pastikan Web App sudah di-deploy dengan benar.");
   } finally {
     btn.disabled = false;
   }
