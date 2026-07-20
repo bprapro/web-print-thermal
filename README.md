@@ -1,0 +1,2 @@
+# web-print-thermal
+Printer
