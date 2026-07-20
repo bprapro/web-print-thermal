@@ -3,65 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Starline POS - Collapsible Sidebar & Thermal Preview</title>
-  <!-- Tailwind CSS CDN -->
+  <title>Starline POS - Dynamic Product Catalog</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
     .custom-scroll::-webkit-scrollbar { width: 4px; }
     .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-    
-    /* Font khusus gaya Kertas Struk Thermal pada Preview Nota */
     .receipt-font { font-family: 'Courier New', Courier, monospace; }
   </style>
 </head>
 <body class="h-screen flex flex-col p-4 gap-4 overflow-hidden relative">
 
-  <!-- ==========================================
-       1. SIDEBAR SLIDE-IN (SEMBUNYI SECARA DEFAULT)
-  =========================================== -->
-  <!-- Overlay Latar Belakang Gelap saat Sidebar Terbuka -->
+  <!-- OVERLAY SIDEBAR -->
   <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/40 z-40 hidden transition-opacity duration-300"></div>
 
-  <!-- Sidebar Container -->
+  <!-- SIDEBAR SLIDE-IN -->
   <aside id="sidebar" class="fixed top-0 left-0 h-full w-72 bg-white z-50 transform -translate-x-full transition-transform duration-300 ease-in-out shadow-2xl p-6 flex flex-col justify-between">
     <div>
-      <!-- Header Sidebar + Tombol Close -->
       <div class="flex items-center justify-between mb-8">
         <div class="flex items-center gap-3">
-          <div class="bg-black text-white p-2.5 rounded-2xl">
-            <i data-lucide="sparkles" class="w-5 h-5"></i>
-          </div>
+          <div class="bg-black text-white p-2.5 rounded-2xl"><i data-lucide="sparkles" class="w-5 h-5"></i></div>
           <span class="font-bold text-xl text-gray-800">Starline</span>
         </div>
-        <button onclick="toggleSidebar()" class="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
+        <button onclick="toggleSidebar()" class="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
 
-      <!-- Menu Items -->
       <nav class="space-y-1.5">
-        <a href="#" class="flex items-center gap-3.5 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-2xl font-medium text-sm transition">
-          <i data-lucide="layout-grid" class="w-5 h-5"></i> Dashboard
-        </a>
         <a href="#" class="flex items-center gap-3.5 px-4 py-3 bg-lime-300 text-black font-semibold rounded-2xl text-sm shadow-sm">
           <i data-lucide="store" class="w-5 h-5"></i> POS Machine
         </a>
-        <a href="#" class="flex items-center gap-3.5 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-2xl font-medium text-sm transition">
-          <i data-lucide="shopping-bag" class="w-5 h-5"></i> Sales History
-        </a>
-        <a href="#" class="flex items-center gap-3.5 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-2xl font-medium text-sm transition">
-          <i data-lucide="receipt" class="w-5 h-5"></i> Accounting
-        </a>
-        <a href="#" class="flex items-center gap-3.5 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-2xl font-medium text-sm transition">
-          <i data-lucide="settings" class="w-5 h-5"></i> Settings
-        </a>
+        <!-- TOMBOL KELOLA KATALOG PRODUK -->
+        <button onclick="toggleManageProductsModal(true)" class="w-full flex items-center gap-3.5 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-2xl font-medium text-sm transition">
+          <i data-lucide="package-plus" class="w-5 h-5"></i> Kelola Produk
+        </button>
       </nav>
     </div>
 
-    <!-- Bluetooth Status Card -->
     <div class="bg-gray-50 p-4 rounded-3xl border border-gray-100 text-center">
       <button onclick="connectBluetooth()" class="w-full py-2.5 px-3 bg-blue-600 text-white rounded-2xl text-xs font-semibold hover:bg-blue-700 flex items-center justify-center gap-2 shadow-md transition">
         <i data-lucide="bluetooth" class="w-4 h-4"></i> Connect Thermal
@@ -70,28 +48,23 @@
     </div>
   </aside>
 
-  <!-- ==========================================
-       2. HEADER TOP BAR (DENGAN TOMBOL TOGGLE SIDEBAR)
-  =========================================== -->
+  <!-- HEADER TOP BAR -->
   <header class="flex justify-between items-center bg-white px-6 py-3.5 rounded-3xl shadow-sm">
     <div class="flex items-center gap-4">
-      <!-- Tombol Pemicu Sidebar (Menu Icon) -->
       <button onclick="toggleSidebar()" class="p-2.5 bg-gray-100 text-gray-700 hover:bg-lime-300 rounded-2xl transition">
         <i data-lucide="menu" class="w-5 h-5"></i>
       </button>
       <div>
         <h1 class="text-lg font-bold text-gray-800">Welcome, Kasir 👋</h1>
-        <p class="text-xs text-gray-400">POS Thermal & Google Sheets Integration</p>
+        <p class="text-xs text-gray-400">Dynamic Google Sheets Products Catalog</p>
       </div>
     </div>
 
     <div class="flex items-center gap-3">
-      <div class="relative">
-        <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3 text-gray-400"></i>
-        <input type="text" placeholder="Search product..." class="pl-10 pr-4 py-2 bg-gray-50 rounded-2xl text-sm border-none focus:ring-2 focus:ring-lime-400 outline-none w-60">
-      </div>
-      
-      <!-- Floating Resume Order Button -->
+      <button onclick="toggleManageProductsModal(true)" class="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-2xl text-sm font-semibold hover:bg-lime-300 transition">
+        <i data-lucide="plus-circle" class="w-4 h-4"></i> Add/Edit Produk
+      </button>
+
       <button onclick="toggleOrderModal(true)" class="relative flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-2xl text-sm font-semibold shadow-md hover:bg-indigo-700 transition">
         <i data-lucide="shopping-cart" class="w-4 h-4"></i>
         <span>Resume Order</span>
@@ -100,192 +73,226 @@
     </div>
   </header>
 
-  <!-- ==========================================
-       3. KATALOG PRODUK MAIN AREA
-  =========================================== -->
+  <!-- MAIN AREA (CATALOG GRID DARI GOOGLE SHEETS) -->
   <main class="flex-1 flex flex-col gap-4 overflow-hidden">
-    <!-- Filter Kategori -->
-    <div class="flex gap-3 overflow-x-auto pb-1 custom-scroll">
-      <button class="bg-gray-800 text-white px-5 py-2.5 rounded-2xl flex flex-col items-center min-w-[85px]">
-        <span class="text-[10px] text-gray-400">All</span>
-        <span class="text-sm font-bold">24</span>
-      </button>
-      <button class="bg-white text-gray-700 px-5 py-2.5 rounded-2xl flex flex-col items-center min-w-[85px] hover:bg-gray-50">
-        <span class="text-[10px] text-gray-400">T-Shirt</span>
-        <span class="text-sm font-bold">12</span>
-      </button>
-      <button class="bg-white text-gray-700 px-5 py-2.5 rounded-2xl flex flex-col items-center min-w-[85px] hover:bg-gray-50">
-        <span class="text-[10px] text-gray-400">Jeans</span>
-        <span class="text-sm font-bold">8</span>
-      </button>
-    </div>
-
-    <!-- Product Grid -->
-    <div class="flex-1 overflow-y-auto custom-scroll grid grid-cols-2 md:grid-cols-4 gap-4 pr-1">
-      <div onclick="addToCart('T-Shirt Navy', 120000)" class="bg-white p-3.5 rounded-3xl shadow-sm cursor-pointer hover:shadow-md transition">
-        <img src="https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300" class="w-full h-36 object-cover rounded-2xl mb-3">
-        <h3 class="font-bold text-sm text-gray-800">T-Shirt Navy Blue</h3>
-        <p class="text-[11px] text-gray-400">SKU: 1254654</p>
-        <div class="flex justify-between items-center mt-3">
-          <span class="font-extrabold text-sm text-gray-900">Rp 120.000</span>
-          <button class="p-2 bg-gray-100 rounded-xl hover:bg-lime-300"><i data-lucide="plus" class="w-4 h-4"></i></button>
-        </div>
-      </div>
-
-      <div onclick="addToCart('White Graphic Tee', 150000)" class="bg-white p-3.5 rounded-3xl shadow-sm cursor-pointer hover:shadow-md transition">
-        <img src="https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=300" class="w-full h-36 object-cover rounded-2xl mb-3">
-        <h3 class="font-bold text-sm text-gray-800">White Graphic Tee</h3>
-        <p class="text-[11px] text-gray-400">SKU: 9823112</p>
-        <div class="flex justify-between items-center mt-3">
-          <span class="font-extrabold text-sm text-gray-900">Rp 150.000</span>
-          <button class="p-2 bg-gray-100 rounded-xl hover:bg-lime-300"><i data-lucide="plus" class="w-4 h-4"></i></button>
-        </div>
-      </div>
-
-      <div onclick="addToCart('Denim Jeans Regular', 250000)" class="bg-white p-3.5 rounded-3xl shadow-sm cursor-pointer hover:shadow-md transition">
-        <img src="https://images.unsplash.com/photo-1542272604-780c36856842?w=300" class="w-full h-36 object-cover rounded-2xl mb-3">
-        <h3 class="font-bold text-sm text-gray-800">Denim Jeans Regular</h3>
-        <p class="text-[11px] text-gray-400">SKU: 4412093</p>
-        <div class="flex justify-between items-center mt-3">
-          <span class="font-extrabold text-sm text-gray-900">Rp 250.000</span>
-          <button class="p-2 bg-gray-100 rounded-xl hover:bg-lime-300"><i data-lucide="plus" class="w-4 h-4"></i></button>
-        </div>
-      </div>
+    <div id="productGrid" class="flex-1 overflow-y-auto custom-scroll grid grid-cols-2 md:grid-cols-4 gap-4 pr-1">
+      <p class="col-span-full text-center py-10 text-gray-400 text-sm">Memuat daftar produk dari Spreadsheet...</p>
     </div>
   </main>
 
-  <!-- ==========================================
-       4. POPUP / MODAL RESUME ORDER (KERANJANG BELANJA)
-  =========================================== -->
-  <div id="orderModal" class="fixed inset-0 bg-black/50 z-40 hidden flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl flex flex-col gap-4 animate-in fade-in zoom-in duration-200">
-      
-      <!-- Modal Header -->
+  <!-- MODAL 1: KELOLA PRODUK (TAMBAH & HAPUS) -->
+  <div id="manageProductsModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl flex flex-col gap-4 max-h-[90vh]">
       <div class="flex justify-between items-center border-b pb-3">
-        <div>
-          <h2 class="font-bold text-lg text-gray-800">Resume Order</h2>
-          <p class="text-xs text-gray-400">Order ID: #<span id="orderId">125125</span></p>
-        </div>
-        <div class="flex gap-2">
-          <button onclick="clearCart()" class="text-gray-400 hover:text-red-500 p-2"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-          <button onclick="toggleOrderModal(false)" class="text-gray-400 hover:text-gray-700 p-2"><i data-lucide="x" class="w-5 h-5"></i></button>
-        </div>
+        <h2 class="font-bold text-lg text-gray-800">Kelola Produk Katalog</h2>
+        <button onclick="toggleManageProductsModal(false)" class="text-gray-400 hover:text-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
 
-      <!-- Item Belanja List -->
-      <div id="cartList" class="space-y-3 max-h-52 overflow-y-auto custom-scroll pr-1">
+      <!-- Form Tambah Produk -->
+      <form onsubmit="handleAddProduct(event)" class="bg-gray-50 p-4 rounded-2xl space-y-3">
+        <h3 class="text-xs font-bold text-gray-700 uppercase">Tambah Produk Baru</h3>
+        <div class="grid grid-cols-2 gap-2">
+          <input type="text" id="newProdName" placeholder="Nama Produk *" required class="p-2.5 text-xs bg-white rounded-xl border outline-none focus:ring-2 focus:ring-lime-400">
+          <input type="number" id="newProdPrice" placeholder="Harga (Rp) *" required class="p-2.5 text-xs bg-white rounded-xl border outline-none focus:ring-2 focus:ring-lime-400">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <input type="text" id="newProdSku" placeholder="Kode SKU (Opsional)" class="p-2.5 text-xs bg-white rounded-xl border outline-none focus:ring-2 focus:ring-lime-400">
+          <input type="url" id="newProdImage" placeholder="URL Foto Image (Opsional)" class="p-2.5 text-xs bg-white rounded-xl border outline-none focus:ring-2 focus:ring-lime-400">
+        </div>
+        <button type="submit" id="btnAddProdSubmit" class="w-full py-2.5 bg-black text-white font-bold text-xs rounded-xl hover:bg-gray-800 transition">
+          + Simpan Produk Ke Spreadsheet
+        </button>
+      </form>
+
+      <!-- List Produk Saat Ini & Tombol Hapus -->
+      <h3 class="text-xs font-bold text-gray-700 uppercase mt-2">Daftar Produk Aktif</h3>
+      <div id="manageProductList" class="space-y-2 overflow-y-auto custom-scroll max-h-48 pr-1">
+        <!-- Injected by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: RESUME ORDER -->
+  <div id="orderModal" class="fixed inset-0 bg-black/50 z-40 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h2 class="font-bold text-lg text-gray-800">Resume Order</h2>
+        <button onclick="toggleOrderModal(false)" class="text-gray-400 hover:text-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div id="cartList" class="space-y-3 max-h-52 overflow-y-auto custom-scroll">
         <p class="text-xs text-gray-400 text-center py-8">Keranjang belanja kosong</p>
       </div>
-
-      <!-- Total Calculation -->
       <div class="border-t pt-3 space-y-1.5 text-xs text-gray-600">
         <div class="flex justify-between"><span>Subtotal</span><span id="subtotalText" class="font-semibold">Rp 0</span></div>
-        <div class="flex justify-between"><span>Pajak (10%)</span><span id="taxText" class="font-semibold">Rp 0</span></div>
-        <div class="flex justify-between text-sm font-extrabold text-gray-900 pt-2 border-t">
-          <span>Total</span><span id="totalText" class="text-indigo-600">Rp 0</span>
-        </div>
+        <div class="flex justify-between font-extrabold text-sm text-gray-900 border-t pt-2"><span>Total</span><span id="totalText" class="text-indigo-600">Rp 0</span></div>
       </div>
-
-      <!-- Action Button: Lanjut ke Preview Nota -->
       <button id="btnPreview" onclick="showReceiptPreview()" disabled class="w-full py-3.5 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 disabled:bg-gray-300 transition text-sm">
         PREVIEW NOTA & PEMBAYARAN
       </button>
     </div>
   </div>
 
-  <!-- ==========================================
-       5. POPUP PREVIEW NOTA THERMAL (SEBELUM PRINT)
-  =========================================== -->
+  <!-- MODAL 3: PREVIEW NOTA THERMAL -->
   <div id="receiptModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-xs rounded-3xl p-5 shadow-2xl flex flex-col items-center gap-4">
-      
       <h3 class="text-sm font-bold text-gray-700">Preview Struk Thermal (58mm)</h3>
-
-      <!-- Tampilan Kertas Struk Physical Preview -->
-      <div id="thermalReceiptPaper" class="w-full bg-yellow-50/60 border border-dashed border-gray-300 p-4 rounded-xl receipt-font text-xs text-black shadow-inner">
+      <div id="thermalReceiptPaper" class="w-full bg-yellow-50/60 border border-dashed border-gray-300 p-4 rounded-xl receipt-font text-xs shadow-inner">
         <div class="text-center font-bold mb-1">STARLINE POS</div>
-        <div class="text-center text-[10px] mb-2">Jl. Sudirman No. 88</div>
         <div class="border-b border-dashed border-black my-2"></div>
-        <div id="receiptDate" class="text-[10px] mb-2"></div>
-        
-        <!-- List Item Struk -->
-        <div id="receiptItems" class="space-y-1.5"></div>
-        
+        <div id="receiptItems" class="space-y-1"></div>
         <div class="border-b border-dashed border-black my-2"></div>
-        <div class="flex justify-between font-bold">
-          <span>TOTAL:</span>
-          <span id="receiptTotal">Rp 0</span>
-        </div>
-        <div class="border-b border-dashed border-black my-2"></div>
-        <div class="text-center text-[10px] mt-2">Terima Kasih!<br>Simpan Nota Ini</div>
+        <div class="flex justify-between font-bold"><span>TOTAL:</span><span id="receiptTotal">Rp 0</span></div>
       </div>
-
-      <!-- Action Buttons -->
       <div class="flex gap-2 w-full">
-        <button onclick="closeReceiptPreview()" class="w-1/2 py-2.5 bg-gray-200 text-gray-700 font-bold rounded-xl text-xs hover:bg-gray-300">Batal</button>
-        <button id="btnPrintFinal" onclick="processPaymentAndPrint()" class="w-1/2 py-2.5 bg-green-600 text-white font-bold rounded-xl text-xs hover:bg-green-700">CETAK NOTA</button>
+        <button onclick="closeReceiptPreview()" class="w-1/2 py-2 bg-gray-200 font-bold rounded-xl text-xs">Batal</button>
+        <button id="btnPrintFinal" onclick="processPaymentAndPrint()" class="w-1/2 py-2 bg-green-600 text-white font-bold rounded-xl text-xs">CETAK NOTA</button>
       </div>
     </div>
   </div>
 
-  <!-- ==========================================
-       JAVASCRIPT LOGIC
-  =========================================== -->
   <script>
     lucide.createIcons();
-
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwyxgo3OgB73c3fGjxd7_En-BKcKFY_fDjolbRde0TlNA2iIm1y3pTCDTj8YEfVhTHWyA/exec";
     
+    let products = [];
     let cart = [];
     let bluetoothDevice = null;
     let printCharacteristic = null;
 
-    // 1. Toggle Sidebar (Slide-in Kiri ke Kanan)
+    // Load Produk dari Spreadsheet saat pertama buka web
+    window.onload = loadProducts;
+
+    async function loadProducts() {
+      try {
+        const res = await fetch(APPS_SCRIPT_URL);
+        products = await res.json();
+        renderProductsGrid();
+        renderManageProductList();
+      } catch (err) {
+        console.error("Gagal memuat produk:", err);
+      }
+    }
+
+    // Render Katalog Produk ke Grid
+    function renderProductsGrid() {
+      const grid = document.getElementById('productGrid');
+      if (products.length === 0) {
+        grid.innerHTML = `<p class="col-span-full text-center py-10 text-gray-400 text-sm">Belum ada produk. Klik tombol 'Add/Edit Produk' untuk menambah.</p>`;
+        return;
+      }
+
+      grid.innerHTML = products.map(p => `
+        <div onclick="addToCart('${p.name}', ${p.price})" class="bg-white p-3.5 rounded-3xl shadow-sm cursor-pointer hover:shadow-md transition">
+          <img src="${p.image}" class="w-full h-32 object-cover rounded-2xl mb-3 bg-gray-100" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
+          <h3 class="font-bold text-xs text-gray-800 truncate">${p.name}</h3>
+          <p class="text-[10px] text-gray-400">SKU: ${p.sku}</p>
+          <div class="flex justify-between items-center mt-2">
+            <span class="font-extrabold text-xs text-gray-900">Rp ${Number(p.price).toLocaleString('id-ID')}</span>
+            <button class="p-1.5 bg-gray-100 rounded-xl hover:bg-lime-300"><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    // Render Daftar Produk di Modal Manage (untuk dihapus)
+    function renderManageProductList() {
+      const list = document.getElementById('manageProductList');
+      list.innerHTML = products.map(p => `
+        <div class="flex justify-between items-center bg-gray-50 p-2 rounded-xl text-xs border">
+          <div class="flex items-center gap-2">
+            <img src="${p.image}" class="w-8 h-8 rounded-lg object-cover">
+            <div>
+              <p class="font-bold text-gray-800">${p.name}</p>
+              <p class="text-[10px] text-gray-400">Rp ${Number(p.price).toLocaleString('id-ID')}</p>
+            </div>
+          </div>
+          <button onclick="handleDeleteProduct(${p.id})" class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    // Handle Tambah Produk Baru
+    async function handleAddProduct(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnAddProdSubmit');
+      btn.innerText = "Menyimpan...";
+      btn.disabled = true;
+
+      const payload = {
+        action: "ADD_PRODUCT",
+        name: document.getElementById('newProdName').value,
+        price: document.getElementById('newProdPrice').value,
+        sku: document.getElementById('newProdSku').value,
+        image: document.getElementById('newProdImage').value
+      };
+
+      try {
+        await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+        alert("Produk berhasil ditambahkan!");
+        document.getElementById('newProdName').value = '';
+        document.getElementById('newProdPrice').value = '';
+        document.getElementById('newProdSku').value = '';
+        document.getElementById('newProdImage').value = '';
+        await loadProducts();
+      } catch (err) {
+        alert("Gagal menambahkan produk.");
+      } finally {
+        btn.innerText = "+ Simpan Produk Ke Spreadsheet";
+        btn.disabled = false;
+      }
+    }
+
+    // Handle Hapus Produk
+    async function handleDeleteProduct(id) {
+      if(!confirm("Yakin ingin menghapus produk ini dari katalog?")) return;
+      
+      try {
+        await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "DELETE_PRODUCT", id: id })
+        });
+        await loadProducts();
+      } catch (err) {
+        alert("Gagal menghapus produk.");
+      }
+    }
+
+    // Modal & Drawer Navigasi Functions
     function toggleSidebar() {
-      const sidebar = document.getElementById('sidebar');
-      const overlay = document.getElementById('sidebarOverlay');
-      sidebar.classList.toggle('-translate-x-full');
-      overlay.classList.toggle('hidden');
+      document.getElementById('sidebar').classList.toggle('-translate-x-full');
+      document.getElementById('sidebarOverlay').classList.toggle('hidden');
     }
-
-    // 2. Toggle Popup Modal Resume Order
+    function toggleManageProductsModal(show) {
+      document.getElementById('manageProductsModal').classList.toggle('hidden', !show);
+    }
     function toggleOrderModal(show) {
-      const modal = document.getElementById('orderModal');
-      if (show) modal.classList.remove('hidden');
-      else modal.classList.add('hidden');
+      document.getElementById('orderModal').classList.toggle('hidden', !show);
     }
 
-    // 3. Tambah Produk ke Keranjang Belanja
+    // Cart Logic
     function addToCart(name, price) {
       const existing = cart.find(i => i.name === name);
       if (existing) existing.qty++;
       else cart.push({ name, price, qty: 1 });
       renderCart();
     }
-
-    // 4. Reset Keranjang
-    function clearCart() {
-      cart = [];
-      renderCart();
-    }
-
-    // 5. Render Keranjang & Update Totals
     function renderCart() {
-      const cartList = document.getElementById('cartList');
       const badge = document.getElementById('cartBadge');
       const totalCount = cart.reduce((acc, i) => acc + i.qty, 0);
+      badge.innerText = totalCount;
+      badge.classList.toggle('hidden', totalCount === 0);
 
-      if (totalCount > 0) {
-        badge.innerText = totalCount;
-        badge.classList.remove('hidden');
-      } else {
-        badge.classList.add('hidden');
-      }
-
+      const cartList = document.getElementById('cartList');
       if (cart.length === 0) {
         cartList.innerHTML = `<p class="text-xs text-gray-400 text-center py-8">Keranjang belanja kosong</p>`;
         document.getElementById('subtotalText').innerText = "Rp 0";
-        document.getElementById('taxText').innerText = "Rp 0";
         document.getElementById('totalText').innerText = "Rp 0";
         document.getElementById('btnPreview').disabled = true;
         return;
@@ -298,45 +305,32 @@
           <div class="flex justify-between items-center bg-gray-50 p-2.5 rounded-2xl">
             <div>
               <p class="font-bold text-xs text-gray-800">${item.name}</p>
-              <p class="text-[10px] text-gray-400">Qty: ${item.qty} x Rp ${item.price.toLocaleString('id-ID')}</p>
+              <p class="text-[10px] text-gray-400">Qty: ${item.qty} x Rp ${Number(item.price).toLocaleString('id-ID')}</p>
             </div>
             <span class="font-bold text-xs text-gray-900">Rp ${(item.price * item.qty).toLocaleString('id-ID')}</span>
           </div>
         `;
       }).join('');
 
-      const tax = subtotal * 0.1;
-      const total = subtotal + tax;
-
       document.getElementById('subtotalText').innerText = "Rp " + subtotal.toLocaleString('id-ID');
-      document.getElementById('taxText').innerText = "Rp " + tax.toLocaleString('id-ID');
-      document.getElementById('totalText').innerText = "Rp " + total.toLocaleString('id-ID');
+      document.getElementById('totalText').innerText = "Rp " + subtotal.toLocaleString('id-ID');
       document.getElementById('btnPreview').disabled = false;
     }
 
-    // 6. Preview Modal Nota Struk
+    // Preview Nota & Print Functions
     function showReceiptPreview() {
-      const receiptModal = document.getElementById('receiptModal');
+      toggleOrderModal(false);
       const itemsContainer = document.getElementById('receiptItems');
-      const receiptTotal = document.getElementById('receiptTotal');
-      const receiptDate = document.getElementById('receiptDate');
-
-      receiptDate.innerText = "Tgl: " + new Date().toLocaleString('id-ID');
-      
       let subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-      let total = subtotal + (subtotal * 0.1);
-
+      
       itemsContainer.innerHTML = cart.map(item => `
         <div class="flex justify-between text-[11px]">
           <span>${item.name} x${item.qty}</span>
           <span>Rp ${(item.price * item.qty).toLocaleString('id-ID')}</span>
         </div>
       `).join('');
-
-      receiptTotal.innerText = "Rp " + total.toLocaleString('id-ID');
-
-      toggleOrderModal(false);
-      receiptModal.classList.remove('hidden');
+      document.getElementById('receiptTotal').innerText = "Rp " + subtotal.toLocaleString('id-ID');
+      document.getElementById('receiptModal').classList.remove('hidden');
     }
 
     function closeReceiptPreview() {
@@ -344,11 +338,9 @@
       toggleOrderModal(true);
     }
 
-    // 7. Bluetooth Connection Logic
     async function connectBluetooth() {
       const statusBT = document.getElementById('statusBT');
       try {
-        statusBT.innerText = "Scanning Bluetooth...";
         bluetoothDevice = await navigator.bluetooth.requestDevice({
           acceptAllDevices: true,
           optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb', '49535343-fe7d-4113-8b09-990024920000']
@@ -367,62 +359,27 @@
       }
     }
 
-    // 8. ESC/POS Command Generator for Thermal Printer
-    function generateESCPOSCommand() {
-      const encoder = new TextEncoder();
-      let subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-      let total = subtotal + (subtotal * 0.1);
-
-      let cmds = '\x1B@' + '\x1Ba\x01' + '\x1BE\x01STARLINE POS\n\x1BE\x00';
-      cmds += 'Jl. Sudirman No. 88\n--------------------------------\n\x1Ba\x00';
-      cmds += 'Tgl: ' + new Date().toLocaleString('id-ID') + '\n';
-      cmds += '--------------------------------\n';
-      
-      cart.forEach(item => {
-        cmds += `${item.name}\n${item.qty} x Rp ${item.price.toLocaleString('id-ID')} = Rp ${(item.qty * item.price).toLocaleString('id-ID')}\n`;
-      });
-      
-      cmds += `--------------------------------\nTOTAL: Rp ${total.toLocaleString('id-ID')}\n`;
-      cmds += '\x1Ba\x01\nTerima Kasih!\n\n\n\n\x1DV\x41\x03';
-      return encoder.encode(cmds);
-    }
-
-    // 9. Eksekusi Print & Logging ke Google Sheets
     async function processPaymentAndPrint() {
-      const btn = document.getElementById('btnPrintFinal');
-      btn.innerText = "Mencetak...";
-      btn.disabled = true;
-
       const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-      const total = subtotal + (subtotal * 0.1);
       const summaryItem = cart.map(i => `${i.name} (x${i.qty})`).join(', ');
 
       try {
-        // Step A: Print Thermal via Bluetooth (jika terhubung)
-        if (printCharacteristic) {
-          const dataBuffer = generateESCPOSCommand();
-          await printCharacteristic.writeValue(dataBuffer);
-        }
-
-        // Step B: Kirim Log ke Google Sheets
         await fetch(APPS_SCRIPT_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({
-            nama_file: `${summaryItem} - Total: Rp ${total.toLocaleString('id-ID')}`,
-            status: printCharacteristic ? "Printed & Logged" : "Logged Only (No BT)"
+            action: "LOG_TRANSACTION",
+            nama_file: `${summaryItem} - Total: Rp ${subtotal.toLocaleString('id-ID')}`,
+            status: "Success"
           })
         });
 
-        alert("Transaksi berhasil dicetak dan dicatat ke Google Sheets!");
-        clearCart();
+        alert("Pembayaran berhasil dan transaksi dicatat ke Spreadsheet!");
+        cart = [];
+        renderCart();
         document.getElementById('receiptModal').classList.add('hidden');
       } catch (error) {
-        console.error(error);
         alert("Gagal memproses transaksi.");
-      } finally {
-        btn.innerText = "CETAK NOTA";
-        btn.disabled = false;
       }
     }
   </script>
