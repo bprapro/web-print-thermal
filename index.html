@@ -3,214 +3,234 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>POS System - Modern Thermal & Preview</title>
+  <title>Starline POS - Collapsible Sidebar & Thermal Preview</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    body { font-family: 'Inter', sans-serif; background-color: #e5e7eb; }
+    body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
     .custom-scroll::-webkit-scrollbar { width: 4px; }
     .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     
-    /* Font khas mesin nota thermal untuk preview */
-    .font-thermal {
-      font-family: 'Courier New', Courier, monospace;
-    }
+    /* Font khusus gaya Kertas Struk Thermal pada Preview Nota */
+    .receipt-font { font-family: 'Courier New', Courier, monospace; }
   </style>
 </head>
-<body class="h-screen flex p-4 gap-4 overflow-hidden relative">
+<body class="h-screen flex flex-col p-4 gap-4 overflow-hidden relative">
 
-  <!-- 1. SIDEBAR NAVIGASI (DENGAN TOGGLE STARLINE) -->
-  <aside class="w-64 bg-white/80 backdrop-blur-md rounded-3xl p-5 flex flex-col justify-between shadow-sm transition-all duration-300">
+  <!-- ==========================================
+       1. SIDEBAR SLIDE-IN (SEMBUNYI SECARA DEFAULT)
+  =========================================== -->
+  <!-- Overlay Latar Belakang Gelap saat Sidebar Terbuka -->
+  <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/40 z-40 hidden transition-opacity duration-300"></div>
+
+  <!-- Sidebar Container -->
+  <aside id="sidebar" class="fixed top-0 left-0 h-full w-72 bg-white z-50 transform -translate-x-full transition-transform duration-300 ease-in-out shadow-2xl p-6 flex flex-col justify-between">
     <div>
-      <!-- Brand Button (Klik untuk membuka/menutup opsi menu) -->
-      <button onclick="toggleStarlineMenu()" class="w-full flex items-center justify-between p-2 hover:bg-gray-100 rounded-2xl transition mb-2">
+      <!-- Header Sidebar + Tombol Close -->
+      <div class="flex items-center justify-between mb-8">
         <div class="flex items-center gap-3">
-          <div class="bg-black text-white p-2 rounded-xl">
+          <div class="bg-black text-white p-2.5 rounded-2xl">
             <i data-lucide="sparkles" class="w-5 h-5"></i>
           </div>
-          <span class="font-bold text-lg text-gray-800">Starline</span>
+          <span class="font-bold text-xl text-gray-800">Starline</span>
         </div>
-        <i id="starlineChevron" data-lucide="chevron-down" class="w-4 h-4 text-gray-500 transition-transform duration-200"></i>
-      </button>
+        <button onclick="toggleSidebar()" class="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
 
-      <!-- Submenu Items (Default: Hidden / Hidden Toggle) -->
-      <nav id="starlineMenu" class="hidden space-y-1 mt-2">
-        <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl font-medium text-sm">
-          <i data-lucide="layout-grid" class="w-4 h-4"></i> Dashboard
+      <!-- Menu Items -->
+      <nav class="space-y-1.5">
+        <a href="#" class="flex items-center gap-3.5 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-2xl font-medium text-sm transition">
+          <i data-lucide="layout-grid" class="w-5 h-5"></i> Dashboard
         </a>
-        <a href="#" class="flex items-center gap-3 px-4 py-2.5 bg-lime-300 text-black font-semibold rounded-xl text-sm shadow-sm">
-          <i data-lucide="store" class="w-4 h-4"></i> POS Machine
+        <a href="#" class="flex items-center gap-3.5 px-4 py-3 bg-lime-300 text-black font-semibold rounded-2xl text-sm shadow-sm">
+          <i data-lucide="store" class="w-5 h-5"></i> POS Machine
         </a>
-        <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl font-medium text-sm">
-          <i data-lucide="shopping-bag" class="w-4 h-4"></i> Sales
+        <a href="#" class="flex items-center gap-3.5 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-2xl font-medium text-sm transition">
+          <i data-lucide="shopping-bag" class="w-5 h-5"></i> Sales History
         </a>
-        <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl font-medium text-sm">
-          <i data-lucide="receipt" class="w-4 h-4"></i> Accounting
+        <a href="#" class="flex items-center gap-3.5 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-2xl font-medium text-sm transition">
+          <i data-lucide="receipt" class="w-5 h-5"></i> Accounting
         </a>
-        <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl font-medium text-sm">
-          <i data-lucide="settings" class="w-4 h-4"></i> Settings
+        <a href="#" class="flex items-center gap-3.5 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-2xl font-medium text-sm transition">
+          <i data-lucide="settings" class="w-5 h-5"></i> Settings
         </a>
       </nav>
     </div>
 
-    <!-- Bluetooth Status Footer -->
-    <div class="bg-gray-50 p-3 rounded-2xl border border-gray-100 text-center">
-      <button onclick="connectBluetooth()" class="w-full py-2 px-3 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 flex items-center justify-center gap-2">
-        <i data-lucide="bluetooth" class="w-4 h-4"></i> Connect Printer
+    <!-- Bluetooth Status Card -->
+    <div class="bg-gray-50 p-4 rounded-3xl border border-gray-100 text-center">
+      <button onclick="connectBluetooth()" class="w-full py-2.5 px-3 bg-blue-600 text-white rounded-2xl text-xs font-semibold hover:bg-blue-700 flex items-center justify-center gap-2 shadow-md transition">
+        <i data-lucide="bluetooth" class="w-4 h-4"></i> Connect Thermal
       </button>
       <p id="statusBT" class="text-[11px] text-red-500 mt-2 font-medium">Printer Disconnected</p>
     </div>
   </aside>
 
-  <!-- 2. KATALOG PRODUK (AREA UTAMA) -->
-  <main class="flex-1 flex flex-col gap-4 overflow-hidden">
-    <!-- Top Header Bar -->
-    <header class="flex justify-between items-center bg-white/60 backdrop-blur-md px-6 py-4 rounded-3xl shadow-sm">
+  <!-- ==========================================
+       2. HEADER TOP BAR (DENGAN TOMBOL TOGGLE SIDEBAR)
+  =========================================== -->
+  <header class="flex justify-between items-center bg-white px-6 py-3.5 rounded-3xl shadow-sm">
+    <div class="flex items-center gap-4">
+      <!-- Tombol Pemicu Sidebar (Menu Icon) -->
+      <button onclick="toggleSidebar()" class="p-2.5 bg-gray-100 text-gray-700 hover:bg-lime-300 rounded-2xl transition">
+        <i data-lucide="menu" class="w-5 h-5"></i>
+      </button>
       <div>
-        <h1 class="text-xl font-bold text-gray-800">Welcome, Kasir 👋</h1>
-        <p class="text-xs text-gray-400">Pilih produk untuk mulai melakukan transaksi.</p>
+        <h1 class="text-lg font-bold text-gray-800">Welcome, Kasir 👋</h1>
+        <p class="text-xs text-gray-400">POS Thermal & Google Sheets Integration</p>
       </div>
-      <div class="flex items-center gap-3">
-        <div class="relative">
-          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-gray-400"></i>
-          <input type="text" placeholder="Search product..." class="pl-9 pr-4 py-2 bg-white rounded-2xl text-sm border-none shadow-sm focus:ring-2 focus:ring-lime-400 outline-none w-64">
-        </div>
-      </div>
-    </header>
+    </div>
 
-    <!-- Grid Katalog Produk -->
-    <div class="flex-1 overflow-y-auto custom-scroll grid grid-cols-3 gap-4 pr-1">
-      <div onclick="addToCart('T-Shirt Navy Blue', 120000)" class="bg-white p-3.5 rounded-3xl shadow-sm cursor-pointer hover:shadow-md transition">
+    <div class="flex items-center gap-3">
+      <div class="relative">
+        <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3 text-gray-400"></i>
+        <input type="text" placeholder="Search product..." class="pl-10 pr-4 py-2 bg-gray-50 rounded-2xl text-sm border-none focus:ring-2 focus:ring-lime-400 outline-none w-60">
+      </div>
+      
+      <!-- Floating Resume Order Button -->
+      <button onclick="toggleOrderModal(true)" class="relative flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-2xl text-sm font-semibold shadow-md hover:bg-indigo-700 transition">
+        <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+        <span>Resume Order</span>
+        <span id="cartBadge" class="bg-lime-300 text-black text-[10px] font-bold px-2 py-0.5 rounded-full ml-1 hidden">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==========================================
+       3. KATALOG PRODUK MAIN AREA
+  =========================================== -->
+  <main class="flex-1 flex flex-col gap-4 overflow-hidden">
+    <!-- Filter Kategori -->
+    <div class="flex gap-3 overflow-x-auto pb-1 custom-scroll">
+      <button class="bg-gray-800 text-white px-5 py-2.5 rounded-2xl flex flex-col items-center min-w-[85px]">
+        <span class="text-[10px] text-gray-400">All</span>
+        <span class="text-sm font-bold">24</span>
+      </button>
+      <button class="bg-white text-gray-700 px-5 py-2.5 rounded-2xl flex flex-col items-center min-w-[85px] hover:bg-gray-50">
+        <span class="text-[10px] text-gray-400">T-Shirt</span>
+        <span class="text-sm font-bold">12</span>
+      </button>
+      <button class="bg-white text-gray-700 px-5 py-2.5 rounded-2xl flex flex-col items-center min-w-[85px] hover:bg-gray-50">
+        <span class="text-[10px] text-gray-400">Jeans</span>
+        <span class="text-sm font-bold">8</span>
+      </button>
+    </div>
+
+    <!-- Product Grid -->
+    <div class="flex-1 overflow-y-auto custom-scroll grid grid-cols-2 md:grid-cols-4 gap-4 pr-1">
+      <div onclick="addToCart('T-Shirt Navy', 120000)" class="bg-white p-3.5 rounded-3xl shadow-sm cursor-pointer hover:shadow-md transition">
         <img src="https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300" class="w-full h-36 object-cover rounded-2xl mb-3">
         <h3 class="font-bold text-sm text-gray-800">T-Shirt Navy Blue</h3>
-        <p class="text-[11px] text-gray-400">SKU: 1254654 | Stock: 200</p>
+        <p class="text-[11px] text-gray-400">SKU: 1254654</p>
         <div class="flex justify-between items-center mt-3">
           <span class="font-extrabold text-sm text-gray-900">Rp 120.000</span>
-          <button class="p-1.5 bg-gray-100 rounded-xl hover:bg-lime-300"><i data-lucide="plus" class="w-4 h-4"></i></button>
+          <button class="p-2 bg-gray-100 rounded-xl hover:bg-lime-300"><i data-lucide="plus" class="w-4 h-4"></i></button>
         </div>
       </div>
 
       <div onclick="addToCart('White Graphic Tee', 150000)" class="bg-white p-3.5 rounded-3xl shadow-sm cursor-pointer hover:shadow-md transition">
         <img src="https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=300" class="w-full h-36 object-cover rounded-2xl mb-3">
         <h3 class="font-bold text-sm text-gray-800">White Graphic Tee</h3>
-        <p class="text-[11px] text-gray-400">SKU: 9823112 | Stock: 150</p>
+        <p class="text-[11px] text-gray-400">SKU: 9823112</p>
         <div class="flex justify-between items-center mt-3">
           <span class="font-extrabold text-sm text-gray-900">Rp 150.000</span>
-          <button class="p-1.5 bg-gray-100 rounded-xl hover:bg-lime-300"><i data-lucide="plus" class="w-4 h-4"></i></button>
+          <button class="p-2 bg-gray-100 rounded-xl hover:bg-lime-300"><i data-lucide="plus" class="w-4 h-4"></i></button>
         </div>
       </div>
 
       <div onclick="addToCart('Denim Jeans Regular', 250000)" class="bg-white p-3.5 rounded-3xl shadow-sm cursor-pointer hover:shadow-md transition">
         <img src="https://images.unsplash.com/photo-1542272604-780c36856842?w=300" class="w-full h-36 object-cover rounded-2xl mb-3">
         <h3 class="font-bold text-sm text-gray-800">Denim Jeans Regular</h3>
-        <p class="text-[11px] text-gray-400">SKU: 4412093 | Stock: 80</p>
+        <p class="text-[11px] text-gray-400">SKU: 4412093</p>
         <div class="flex justify-between items-center mt-3">
           <span class="font-extrabold text-sm text-gray-900">Rp 250.000</span>
-          <button class="p-1.5 bg-gray-100 rounded-xl hover:bg-lime-300"><i data-lucide="plus" class="w-4 h-4"></i></button>
+          <button class="p-2 bg-gray-100 rounded-xl hover:bg-lime-300"><i data-lucide="plus" class="w-4 h-4"></i></button>
         </div>
       </div>
     </div>
   </main>
 
-  <!-- 3. KERANJANG RINGKASAN (KANAN) -->
-  <aside class="w-80 bg-white rounded-3xl p-5 flex flex-col justify-between shadow-sm">
-    <div>
-      <div class="flex justify-between items-center mb-4">
-        <span class="text-xs font-bold text-gray-400">Order No: #<span id="orderId">125125</span></span>
-        <button onclick="clearCart()" class="text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-      </div>
-
-      <div id="cartList" class="space-y-3 max-h-56 overflow-y-auto custom-scroll pr-1">
-        <p class="text-xs text-gray-400 text-center py-8">Keranjang belanja kosong</p>
-      </div>
-    </div>
-
-    <div>
-      <div class="border-t pt-3 space-y-1.5 text-xs text-gray-600 mb-4">
-        <div class="flex justify-between"><span>Subtotal</span><span id="subtotalText" class="font-semibold">Rp 0</span></div>
-        <div class="flex justify-between"><span>Pajak (10%)</span><span id="taxText" class="font-semibold">Rp 0</span></div>
-        <div class="flex justify-between text-sm font-extrabold text-gray-900 pt-1 border-t">
-          <span>Total Amount</span><span id="totalText" class="text-indigo-600">Rp 0</span>
-        </div>
-      </div>
-
-      <!-- Tombol Membuka Popup Resume Order & Preview Nota -->
-      <button id="btnOpenResume" onclick="openResumeModal()" disabled class="w-full py-3.5 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg hover:bg-indigo-700 disabled:bg-gray-300 transition text-sm">
-        RESUME ORDER & PREVIEW
-      </button>
-    </div>
-  </aside>
-
-  <!-- ============================================================ -->
-  <!-- 4. POPUP MODAL RESUME ORDER & PREVIEW NOTA THERMAL -->
-  <!-- ============================================================ -->
-  <div id="resumeModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-xl rounded-3xl p-6 shadow-2xl flex flex-col gap-4 max-h-[90vh] overflow-y-auto custom-scroll">
+  <!-- ==========================================
+       4. POPUP / MODAL RESUME ORDER (KERANJANG BELANJA)
+  =========================================== -->
+  <div id="orderModal" class="fixed inset-0 bg-black/50 z-40 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl flex flex-col gap-4 animate-in fade-in zoom-in duration-200">
       
       <!-- Modal Header -->
       <div class="flex justify-between items-center border-b pb-3">
-        <h2 class="text-lg font-bold text-gray-800">Resume Order & Preview Nota</h2>
-        <button onclick="closeResumeModal()" class="p-1 rounded-full hover:bg-gray-100"><i data-lucide="x" class="w-5 h-5 text-gray-500"></i></button>
-      </div>
-
-      <div class="grid grid-cols-2 gap-4">
-        <!-- Kolom Kiri: Detail Rincian Ringkasan -->
-        <div class="flex flex-col justify-between bg-gray-50 p-4 rounded-2xl">
-          <div>
-            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Detail Transaksi</h3>
-            <div id="modalCartSummary" class="space-y-2 text-xs mb-4">
-              <!-- Item list injected by JS -->
-            </div>
-          </div>
-          <div class="border-t pt-2 space-y-1 text-xs">
-            <div class="flex justify-between text-gray-600"><span>Total Tagihan:</span><strong id="modalTotalText" class="text-indigo-600 text-sm">Rp 0</strong></div>
-          </div>
+        <div>
+          <h2 class="font-bold text-lg text-gray-800">Resume Order</h2>
+          <p class="text-xs text-gray-400">Order ID: #<span id="orderId">125125</span></p>
         </div>
-
-        <!-- Kolom Kanan: PREVIEW VISUAL NOTA THERMAL -->
-        <div class="bg-amber-50/50 border border-dashed border-amber-200 p-4 rounded-2xl text-center flex flex-col items-center">
-          <span class="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full mb-3">Thermal Paper Preview (58mm)</span>
-          
-          <!-- Box Simulasi Kertas Thermal -->
-          <div class="bg-white p-3 rounded-md shadow-sm border text-left w-full text-[11px] font-thermal text-black leading-tight">
-            <div class="text-center font-bold">STARLINE STORE</div>
-            <div class="text-center text-[10px] mb-2">Jl. Sudirman No. 88</div>
-            <div class="border-b border-dashed border-black my-1"></div>
-            <div id="previewDate" class="text-[10px]">Tgl: -</div>
-            <div class="border-b border-dashed border-black my-1"></div>
-            
-            <!-- Items list preview -->
-            <div id="previewItemsList" class="space-y-1 my-2">
-              <!-- Item lines -->
-            </div>
-
-            <div class="border-b border-dashed border-black my-1"></div>
-            <div class="flex justify-between font-bold">
-              <span>TOTAL</span>
-              <span id="previewTotal">Rp 0</span>
-            </div>
-            <div class="border-b border-dashed border-black my-1"></div>
-            <div class="text-center text-[10px] mt-2">Terima Kasih!<br>Simpan Struk Ini</div>
-          </div>
+        <div class="flex gap-2">
+          <button onclick="clearCart()" class="text-gray-400 hover:text-red-500 p-2"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+          <button onclick="toggleOrderModal(false)" class="text-gray-400 hover:text-gray-700 p-2"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
       </div>
 
-      <!-- Action Buttons in Modal -->
-      <div class="flex gap-3 mt-2">
-        <button onclick="closeResumeModal()" class="w-1/3 py-3 border border-gray-300 text-gray-700 font-bold rounded-2xl hover:bg-gray-50 text-xs">
-          BATAL / EDIT
-        </button>
-        <button id="btnConfirmPrint" onclick="processPaymentAndPrint()" class="w-2/3 py-3 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 shadow-md text-xs flex items-center justify-center gap-2">
-          <i data-lucide="printer" class="w-4 h-4"></i> PROSES & CETAK NOTA
-        </button>
+      <!-- Item Belanja List -->
+      <div id="cartList" class="space-y-3 max-h-52 overflow-y-auto custom-scroll pr-1">
+        <p class="text-xs text-gray-400 text-center py-8">Keranjang belanja kosong</p>
       </div>
 
+      <!-- Total Calculation -->
+      <div class="border-t pt-3 space-y-1.5 text-xs text-gray-600">
+        <div class="flex justify-between"><span>Subtotal</span><span id="subtotalText" class="font-semibold">Rp 0</span></div>
+        <div class="flex justify-between"><span>Pajak (10%)</span><span id="taxText" class="font-semibold">Rp 0</span></div>
+        <div class="flex justify-between text-sm font-extrabold text-gray-900 pt-2 border-t">
+          <span>Total</span><span id="totalText" class="text-indigo-600">Rp 0</span>
+        </div>
+      </div>
+
+      <!-- Action Button: Lanjut ke Preview Nota -->
+      <button id="btnPreview" onclick="showReceiptPreview()" disabled class="w-full py-3.5 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 disabled:bg-gray-300 transition text-sm">
+        PREVIEW NOTA & PEMBAYARAN
+      </button>
     </div>
   </div>
 
-  <!-- JAVASCRIPT CODE -->
+  <!-- ==========================================
+       5. POPUP PREVIEW NOTA THERMAL (SEBELUM PRINT)
+  =========================================== -->
+  <div id="receiptModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-xs rounded-3xl p-5 shadow-2xl flex flex-col items-center gap-4">
+      
+      <h3 class="text-sm font-bold text-gray-700">Preview Struk Thermal (58mm)</h3>
+
+      <!-- Tampilan Kertas Struk Physical Preview -->
+      <div id="thermalReceiptPaper" class="w-full bg-yellow-50/60 border border-dashed border-gray-300 p-4 rounded-xl receipt-font text-xs text-black shadow-inner">
+        <div class="text-center font-bold mb-1">STARLINE POS</div>
+        <div class="text-center text-[10px] mb-2">Jl. Sudirman No. 88</div>
+        <div class="border-b border-dashed border-black my-2"></div>
+        <div id="receiptDate" class="text-[10px] mb-2"></div>
+        
+        <!-- List Item Struk -->
+        <div id="receiptItems" class="space-y-1.5"></div>
+        
+        <div class="border-b border-dashed border-black my-2"></div>
+        <div class="flex justify-between font-bold">
+          <span>TOTAL:</span>
+          <span id="receiptTotal">Rp 0</span>
+        </div>
+        <div class="border-b border-dashed border-black my-2"></div>
+        <div class="text-center text-[10px] mt-2">Terima Kasih!<br>Simpan Nota Ini</div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-2 w-full">
+        <button onclick="closeReceiptPreview()" class="w-1/2 py-2.5 bg-gray-200 text-gray-700 font-bold rounded-xl text-xs hover:bg-gray-300">Batal</button>
+        <button id="btnPrintFinal" onclick="processPaymentAndPrint()" class="w-1/2 py-2.5 bg-green-600 text-white font-bold rounded-xl text-xs hover:bg-green-700">CETAK NOTA</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       JAVASCRIPT LOGIC
+  =========================================== -->
   <script>
     lucide.createIcons();
 
@@ -220,38 +240,54 @@
     let bluetoothDevice = null;
     let printCharacteristic = null;
 
-    // 1. Toggle Sidebar "Starline"
-    function toggleStarlineMenu() {
-      const menu = document.getElementById('starlineMenu');
-      const icon = document.getElementById('starlineChevron');
-      menu.classList.toggle('hidden');
-      icon.classList.toggle('rotate-180');
+    // 1. Toggle Sidebar (Slide-in Kiri ke Kanan)
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      sidebar.classList.toggle('-translate-x-full');
+      overlay.classList.toggle('hidden');
     }
 
-    // 2. Cart Functions
+    // 2. Toggle Popup Modal Resume Order
+    function toggleOrderModal(show) {
+      const modal = document.getElementById('orderModal');
+      if (show) modal.classList.remove('hidden');
+      else modal.classList.add('hidden');
+    }
+
+    // 3. Tambah Produk ke Keranjang Belanja
     function addToCart(name, price) {
-      const existing = cart.find(item => item.name === name);
-      if (existing) {
-        existing.qty++;
-      } else {
-        cart.push({ name, price, qty: 1 });
-      }
+      const existing = cart.find(i => i.name === name);
+      if (existing) existing.qty++;
+      else cart.push({ name, price, qty: 1 });
       renderCart();
     }
 
+    // 4. Reset Keranjang
     function clearCart() {
       cart = [];
       renderCart();
     }
 
+    // 5. Render Keranjang & Update Totals
     function renderCart() {
       const cartList = document.getElementById('cartList');
+      const badge = document.getElementById('cartBadge');
+      const totalCount = cart.reduce((acc, i) => acc + i.qty, 0);
+
+      if (totalCount > 0) {
+        badge.innerText = totalCount;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+
       if (cart.length === 0) {
         cartList.innerHTML = `<p class="text-xs text-gray-400 text-center py-8">Keranjang belanja kosong</p>`;
         document.getElementById('subtotalText').innerText = "Rp 0";
         document.getElementById('taxText').innerText = "Rp 0";
         document.getElementById('totalText').innerText = "Rp 0";
-        document.getElementById('btnOpenResume').disabled = true;
+        document.getElementById('btnPreview').disabled = true;
         return;
       }
 
@@ -275,53 +311,40 @@
       document.getElementById('subtotalText').innerText = "Rp " + subtotal.toLocaleString('id-ID');
       document.getElementById('taxText').innerText = "Rp " + tax.toLocaleString('id-ID');
       document.getElementById('totalText').innerText = "Rp " + total.toLocaleString('id-ID');
-      document.getElementById('btnOpenResume').disabled = false;
+      document.getElementById('btnPreview').disabled = false;
     }
 
-    // 3. Popup Resume & Preview Nota Logic
-    function openResumeModal() {
-      const modal = document.getElementById('resumeModal');
-      const modalCartSummary = document.getElementById('modalCartSummary');
-      const previewItemsList = document.getElementById('previewItemsList');
-      const modalTotalText = document.getElementById('modalTotalText');
-      const previewTotal = document.getElementById('previewTotal');
-      const previewDate = document.getElementById('previewDate');
+    // 6. Preview Modal Nota Struk
+    function showReceiptPreview() {
+      const receiptModal = document.getElementById('receiptModal');
+      const itemsContainer = document.getElementById('receiptItems');
+      const receiptTotal = document.getElementById('receiptTotal');
+      const receiptDate = document.getElementById('receiptDate');
 
-      let subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+      receiptDate.innerText = "Tgl: " + new Date().toLocaleString('id-ID');
+      
+      let subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
       let total = subtotal + (subtotal * 0.1);
 
-      // Render Ringkasan di Modal
-      modalCartSummary.innerHTML = cart.map(i => `
-        <div class="flex justify-between border-b border-gray-200 pb-1">
-          <span>${i.name} (x${i.qty})</span>
-          <span class="font-semibold">Rp ${(i.price * i.qty).toLocaleString('id-ID')}</span>
+      itemsContainer.innerHTML = cart.map(item => `
+        <div class="flex justify-between text-[11px]">
+          <span>${item.name} x${item.qty}</span>
+          <span>Rp ${(item.price * item.qty).toLocaleString('id-ID')}</span>
         </div>
       `).join('');
 
-      // Render Visual Preview Nota Paper
-      previewItemsList.innerHTML = cart.map(i => `
-        <div>
-          <div>${i.name}</div>
-          <div class="flex justify-between text-[10px] text-gray-600">
-            <span>${i.qty} x ${i.price.toLocaleString('id-ID')}</span>
-            <span>Rp ${(i.price * i.qty).toLocaleString('id-ID')}</span>
-          </div>
-        </div>
-      `).join('');
+      receiptTotal.innerText = "Rp " + total.toLocaleString('id-ID');
 
-      const formattedTotal = "Rp " + total.toLocaleString('id-ID');
-      modalTotalText.innerText = formattedTotal;
-      previewTotal.innerText = formattedTotal;
-      previewDate.innerText = "Tgl: " + new Date().toLocaleString('id-ID');
-
-      modal.classList.remove('hidden');
+      toggleOrderModal(false);
+      receiptModal.classList.remove('hidden');
     }
 
-    function closeResumeModal() {
-      document.getElementById('resumeModal').classList.add('hidden');
+    function closeReceiptPreview() {
+      document.getElementById('receiptModal').classList.add('hidden');
+      toggleOrderModal(true);
     }
 
-    // 4. Web Bluetooth Connection
+    // 7. Bluetooth Connection Logic
     async function connectBluetooth() {
       const statusBT = document.getElementById('statusBT');
       try {
@@ -341,58 +364,64 @@
         }
       } catch (err) {
         statusBT.innerText = "Connection Failed";
-        console.error(err);
       }
     }
 
-    // 5. ESC/POS Direct Print Command Generator
-    function generateESCPOSCommand(cartItems, totalText) {
+    // 8. ESC/POS Command Generator for Thermal Printer
+    function generateESCPOSCommand() {
       const encoder = new TextEncoder();
-      let cmds = '\x1B@' + '\x1Ba\x01' + '\x1BE\x01STARLINE STORE\n\x1BE\x00';
+      let subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+      let total = subtotal + (subtotal * 0.1);
+
+      let cmds = '\x1B@' + '\x1Ba\x01' + '\x1BE\x01STARLINE POS\n\x1BE\x00';
       cmds += 'Jl. Sudirman No. 88\n--------------------------------\n\x1Ba\x00';
+      cmds += 'Tgl: ' + new Date().toLocaleString('id-ID') + '\n';
+      cmds += '--------------------------------\n';
       
-      cartItems.forEach(item => {
+      cart.forEach(item => {
         cmds += `${item.name}\n${item.qty} x Rp ${item.price.toLocaleString('id-ID')} = Rp ${(item.qty * item.price).toLocaleString('id-ID')}\n`;
       });
       
-      cmds += `--------------------------------\nTOTAL: ${totalText}\n`;
+      cmds += `--------------------------------\nTOTAL: Rp ${total.toLocaleString('id-ID')}\n`;
       cmds += '\x1Ba\x01\nTerima Kasih!\n\n\n\n\x1DV\x41\x03';
       return encoder.encode(cmds);
     }
 
-    // 6. Confirm & Execution
+    // 9. Eksekusi Print & Logging ke Google Sheets
     async function processPaymentAndPrint() {
-      const totalText = document.getElementById('modalTotalText').innerText;
-      const btn = document.getElementById('btnConfirmPrint');
-      btn.innerText = "Processing...";
+      const btn = document.getElementById('btnPrintFinal');
+      btn.innerText = "Mencetak...";
       btn.disabled = true;
 
+      const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+      const total = subtotal + (subtotal * 0.1);
+      const summaryItem = cart.map(i => `${i.name} (x${i.qty})`).join(', ');
+
       try {
-        // Direct Print jika printer terhubung
+        // Step A: Print Thermal via Bluetooth (jika terhubung)
         if (printCharacteristic) {
-          const dataBuffer = generateESCPOSCommand(cart, totalText);
+          const dataBuffer = generateESCPOSCommand();
           await printCharacteristic.writeValue(dataBuffer);
         }
 
-        // Simpan Log ke Spreadsheet Apps Script
-        const summaryItem = cart.map(i => `${i.name} (x${i.qty})`).join(', ');
+        // Step B: Kirim Log ke Google Sheets
         await fetch(APPS_SCRIPT_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({
-            nama_file: `${summaryItem} - Total: ${totalText}`,
+            nama_file: `${summaryItem} - Total: Rp ${total.toLocaleString('id-ID')}`,
             status: printCharacteristic ? "Printed & Logged" : "Logged Only (No BT)"
           })
         });
 
-        alert("Transaksi Berhasil!");
-        closeResumeModal();
+        alert("Transaksi berhasil dicetak dan dicatat ke Google Sheets!");
         clearCart();
+        document.getElementById('receiptModal').classList.add('hidden');
       } catch (error) {
         console.error(error);
-        alert("Terjadi kesalahan saat memproses data.");
+        alert("Gagal memproses transaksi.");
       } finally {
-        btn.innerText = "PROSES & CETAK NOTA";
+        btn.innerText = "CETAK NOTA";
         btn.disabled = false;
       }
     }
