@@ -534,7 +534,6 @@ function compressAndConvertToBase64(file, maxWidth = 600, quality = 0.7) {
   });
 }
 
-// Fungsi Simpan Produk yang Sudah Memakai Kompresi Gambar
 async function handleSaveProduct(e) {
   e.preventDefault();
   const btn = document.getElementById('btnAddProdSubmit');
@@ -547,10 +546,9 @@ async function handleSaveProduct(e) {
 
   let base64File = null;
   
-  // Jika ada file gambar dari HP / Galeri
   if (fileInput.files.length > 0) {
     try {
-      // Kompres gambar otomatis sebelum dikirim
+      // Menggunakan fungsi kompresi yang sudah Anda miliki sebelumnya
       base64File = await compressAndConvertToBase64(fileInput.files[0]);
     } catch (err) {
       console.error("Gagal mengompres gambar:", err);
@@ -568,10 +566,14 @@ async function handleSaveProduct(e) {
   };
 
   try {
+    // PERBAIKAN UTAMA: Mengirim menggunakan URLSearchParams / Form Data agar Base64 tidak korup/hilang
+    const formBody = new URLSearchParams();
+    formBody.append("jsonData", JSON.stringify(payload));
+
     const response = await fetch(APPS_SCRIPT_URL, {
       method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload)
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formBody
     });
     
     const resData = await response.json();
@@ -581,7 +583,7 @@ async function handleSaveProduct(e) {
       resetForm();
       await loadProducts();
     } else {
-      alert("Gagal menyimpan ke Spreadsheet.");
+      alert("Gagal menyimpan ke Spreadsheet: " + resData.status);
     }
   } catch (err) {
     alert("Terjadi kesalahan saat mengunggah. Coba lagi.");
