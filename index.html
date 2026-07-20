@@ -479,47 +479,58 @@ async function handleSaveProduct(event) {
   const name = document.getElementById('newProdName').value;
   const price = document.getElementById('newProdPrice').value;
   const sku = document.getElementById('newProdSku').value;
-  let imageUrl = document.getElementById('newProdImage').value;
+  const imageUrl = document.getElementById('newProdImage').value; // Ini untuk URL teks biasa
   
   const fileInput = document.getElementById('newProdFile');
+  let base64File = null;
   
-  // Jika ada file lokal yang diupload, konversi ke Base64 terlebih dahulu
+  // Jika ada file lokal yang diupload, konversi ke Base64 untuk parameter fileData
   if (fileInput && fileInput.files.length > 0) {
     try {
-      imageUrl = await proccesFileToBase64(fileInput.files[0]);
+      base64File = await proccesFileToBase64(fileInput.files[0]);
     } catch (err) {
       alert("Gagal memproses file gambar.");
       return;
     }
   }
 
-  const actionType = id ? "UPDATE_PRODUCT" : "ADD_PRODUCT";
+  const isEdit = id !== "";
   const payload = {
-    action: actionType,
+    action: isEdit ? "EDIT_PRODUCT" : "ADD_PRODUCT",
     name: name,
     price: Number(price),
     sku: sku,
-    image: imageUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=200'
+    image: imageUrl,       // URL gambar (jika input via teks)
+    fileData: base64File   // Data gambar (jika upload file dari HP/PC)
   };
 
-  if (id) payload.id = id;
+  if (isEdit) payload.id = id;
 
   try {
     document.getElementById('btnAddProdSubmit').innerText = "Sedang Menyimpan...";
     document.getElementById('btnAddProdSubmit').disabled = true;
 
-    await fetch(APPS_SCRIPT_URL, {
+    const response = await fetch(APPS_SCRIPT_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(payload)
     });
 
-    resetForm();
-    await loadProducts();
+    const resData = await response.json();
+    
+    if (resData.status === "SUCCESS") {
+      alert(isEdit ? "Produk berhasil diperbarui!" : "Produk berhasil ditambahkan!");
+      resetForm();
+      await loadProducts();
+    } else {
+      alert("Gagal menyimpan: " + resData.status);
+    }
   } catch (err) {
+    console.error(err);
     alert("Gagal menyimpan produk.");
   } finally {
     document.getElementById('btnAddProdSubmit').disabled = false;
+    document.getElementById('btnAddProdSubmit').innerText = isEdit ? "Simpan Perubahan" : "+ Simpan Produk Ke Spreadsheet";
   }
 }
 
