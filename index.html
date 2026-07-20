@@ -454,19 +454,16 @@
       itemsContainer.innerHTML = itemsHTML;
       document.getElementById('receiptTotal').innerText = "Rp " + grandTotal.toLocaleString('id-ID');
 
-      if (selectedPaymentMethod === 'QRIS') {
-        qrisContainer.classList.remove('hidden');
-        document.getElementById('qrisAmountText').innerText = "Rp " + grandTotal.toLocaleString('id-ID');
-        
-        // JIKA MENGGUNAKAN GAMBAR FOTO QRIS STATIS TOKO ANDA, GANTI URL DIBAWAH DENGAN LINK FOTO ANDA
-        // Contoh: document.getElementById('qrisImage').src = "https://i.imgur.com/your-qris-image.png";
-
-        // GENERATE KODE QR DINAMIS
-        const qrisData = `PAYMENT-STARLINE-POS-TOTAL-${grandTotal}`;
-        document.getElementById('qrisImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrisData)}`;
-      } else {
-        qrisContainer.classList.add('hidden');
-      }
+      // --- KODE BARU ---
+if (selectedPaymentMethod === 'QRIS') {
+  qrisContainer.classList.remove('hidden');
+  document.getElementById('qrisAmountText').innerText = "Rp " + grandTotal.toLocaleString('id-ID');
+  
+  // Menggunakan Gambar QRIS langsung dari Google Drive Anda
+  document.getElementById('qrisImage').src = "https://lh3.google.com/u/0/d/1NEQMv9z--jSQgYE1j_otJJaFOnQkmU26";
+} else {
+  qrisContainer.classList.add('hidden');
+}
 
       document.getElementById('receiptModal').classList.remove('hidden');
     }
