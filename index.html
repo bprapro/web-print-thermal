@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Starline POS - Dynamic Product Catalog</title>
+  <title>Starline POS - Dynamic Product Catalog & Payment</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
@@ -117,7 +117,7 @@
     </div>
   </div>
 
-  <!-- MODAL 2: RESUME ORDER (DENGAN OPTION TOGGLE PAJAK) -->
+  <!-- MODAL 2: RESUME ORDER (PAJAK + METODE PEMBAYARAN) -->
   <div id="orderModal" class="fixed inset-0 bg-black/50 z-40 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
       <div class="flex justify-between items-center border-b pb-3">
@@ -125,7 +125,7 @@
         <button onclick="toggleOrderModal(false)" class="text-gray-400 hover:text-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
       
-      <div id="cartList" class="space-y-3 max-h-52 overflow-y-auto custom-scroll">
+      <div id="cartList" class="space-y-3 max-h-48 overflow-y-auto custom-scroll">
         <p class="text-xs text-gray-400 text-center py-8">Keranjang belanja kosong</p>
       </div>
 
@@ -141,6 +141,19 @@
         </label>
       </div>
 
+      <!-- PILIHAN METODE PEMBAYARAN -->
+      <div class="space-y-1.5">
+        <label class="text-xs font-semibold text-gray-700">Metode Pembayaran</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" id="btnPayCash" onclick="selectPayment('CASH')" class="py-2.5 px-3 border-2 border-indigo-600 bg-indigo-50 text-indigo-700 font-bold rounded-xl text-xs flex items-center justify-center gap-2">
+            <i data-lucide="banknote" class="w-4 h-4"></i> Tunai / Cash
+          </button>
+          <button type="button" id="btnPayQris" onclick="selectPayment('QRIS')" class="py-2.5 px-3 border border-gray-200 text-gray-600 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 hover:bg-gray-50">
+            <i data-lucide="qr-code" class="w-4 h-4"></i> QRIS
+          </button>
+        </div>
+      </div>
+
       <!-- RINCIAN TOTAL HARGA -->
       <div class="border-t pt-3 space-y-1.5 text-xs text-gray-600">
         <div class="flex justify-between"><span>Subtotal</span><span id="subtotalText" class="font-semibold">Rp 0</span></div>
@@ -154,10 +167,19 @@
     </div>
   </div>
 
-  <!-- MODAL 3: PREVIEW NOTA THERMAL -->
+  <!-- MODAL 3: PREVIEW NOTA THERMAL & QRIS -->
   <div id="receiptModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-xs rounded-3xl p-5 shadow-2xl flex flex-col items-center gap-4">
-      <h3 class="text-sm font-bold text-gray-700">Preview Struk Thermal (58mm)</h3>
+    <div class="bg-white w-full max-w-xs rounded-3xl p-5 shadow-2xl flex flex-col items-center gap-4 max-h-[90vh] overflow-y-auto custom-scroll">
+      <h3 class="text-sm font-bold text-gray-700">Preview Pembayaran & Nota</h3>
+      
+      <!-- KODE QRIS (Hanya Muncul Jika Pilih QRIS) -->
+      <div id="qrisContainer" class="hidden flex flex-col items-center bg-gray-50 p-3.5 rounded-2xl border w-full text-center">
+        <p class="text-[11px] font-bold text-gray-700 mb-1">Scan QRIS untuk Membayar</p>
+        <img id="qrisImage" src="" alt="QRIS Code" class="w-44 h-44 object-contain rounded-xl border p-1.5 bg-white shadow-sm">
+        <p id="qrisAmountText" class="text-xs font-extrabold text-indigo-600 mt-2">Rp 0</p>
+      </div>
+
+      <!-- STRUK THERMAL -->
       <div id="thermalReceiptPaper" class="w-full bg-yellow-50/60 border border-dashed border-gray-300 p-4 rounded-xl receipt-font text-xs shadow-inner">
         <div class="text-center font-bold mb-1">STARLINE POS</div>
         <div class="border-b border-dashed border-black my-2"></div>
@@ -165,20 +187,22 @@
         <div class="border-b border-dashed border-black my-2"></div>
         <div class="flex justify-between font-bold"><span>TOTAL:</span><span id="receiptTotal">Rp 0</span></div>
       </div>
+
       <div class="flex gap-2 w-full">
-        <button onclick="closeReceiptPreview()" class="w-1/2 py-2 bg-gray-200 font-bold rounded-xl text-xs">Batal</button>
-        <button id="btnPrintFinal" onclick="processPaymentAndPrint()" class="w-1/2 py-2 bg-green-600 text-white font-bold rounded-xl text-xs">CETAK NOTA</button>
+        <button onclick="closeReceiptPreview()" class="w-1/2 py-2.5 bg-gray-200 font-bold rounded-xl text-xs hover:bg-gray-300">Batal</button>
+        <button id="btnPrintFinal" onclick="processPaymentAndPrint()" class="w-1/2 py-2.5 bg-green-600 text-white font-bold rounded-xl text-xs hover:bg-green-700">PROSES & CETAK</button>
       </div>
     </div>
   </div>
 
   <script>
     lucide.createIcons();
-    // Pastikan URL di bawah ini sama dengan URL Apps Script terbaru Anda
+    // GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwyxgo3OgB73c3fGjxd7_En-BKcKFY_fDjolbRde0TlNA2iIm1y3pTCDTj8YEfVhTHWyA/exec";
     
     let products = [];
     let cart = [];
+    let selectedPaymentMethod = 'CASH';
     let bluetoothDevice = null;
     let printCharacteristic = null;
 
@@ -318,6 +342,20 @@
       }
     }
 
+    function selectPayment(method) {
+      selectedPaymentMethod = method;
+      const btnCash = document.getElementById('btnPayCash');
+      const btnQris = document.getElementById('btnPayQris');
+
+      if (method === 'CASH') {
+        btnCash.className = "py-2.5 px-3 border-2 border-indigo-600 bg-indigo-50 text-indigo-700 font-bold rounded-xl text-xs flex items-center justify-center gap-2";
+        btnQris.className = "py-2.5 px-3 border border-gray-200 text-gray-600 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 hover:bg-gray-50";
+      } else {
+        btnQris.className = "py-2.5 px-3 border-2 border-indigo-600 bg-indigo-50 text-indigo-700 font-bold rounded-xl text-xs flex items-center justify-center gap-2";
+        btnCash.className = "py-2.5 px-3 border border-gray-200 text-gray-600 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 hover:bg-gray-50";
+      }
+    }
+
     function toggleSidebar() {
       document.getElementById('sidebar').classList.toggle('-translate-x-full');
       document.getElementById('sidebarOverlay').classList.toggle('hidden');
@@ -366,10 +404,8 @@
         </div>
       `).join('');
 
-      // Hitung Pajak Jika Sakelar Toggle Aktif
       const isTaxActive = document.getElementById('taxToggle').checked;
-      const taxRate = 0.11; // 11% PPN
-      const taxAmount = isTaxActive ? Math.round(subtotal * taxRate) : 0;
+      const taxAmount = isTaxActive ? Math.round(subtotal * 0.11) : 0;
       const grandTotal = subtotal + taxAmount;
 
       document.getElementById('subtotalText').innerText = "Rp " + subtotal.toLocaleString('id-ID');
@@ -388,6 +424,7 @@
     function showReceiptPreview() {
       toggleOrderModal(false);
       const itemsContainer = document.getElementById('receiptItems');
+      const qrisContainer = document.getElementById('qrisContainer');
       
       let subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
       const isTaxActive = document.getElementById('taxToggle').checked;
@@ -409,8 +446,28 @@
         `;
       }
 
+      itemsHTML += `
+        <div class="border-t border-dashed border-gray-400 my-1"></div>
+        <div class="flex justify-between text-[11px] font-bold"><span>Metode:</span><span>${selectedPaymentMethod}</span></div>
+      `;
+
       itemsContainer.innerHTML = itemsHTML;
       document.getElementById('receiptTotal').innerText = "Rp " + grandTotal.toLocaleString('id-ID');
+
+      if (selectedPaymentMethod === 'QRIS') {
+        qrisContainer.classList.remove('hidden');
+        document.getElementById('qrisAmountText').innerText = "Rp " + grandTotal.toLocaleString('id-ID');
+        
+        // JIKA MENGGUNAKAN GAMBAR FOTO QRIS STATIS TOKO ANDA, GANTI URL DIBAWAH DENGAN LINK FOTO ANDA
+        // Contoh: document.getElementById('qrisImage').src = "https://i.imgur.com/your-qris-image.png";
+
+        // GENERATE KODE QR DINAMIS
+        const qrisData = `PAYMENT-STARLINE-POS-TOTAL-${grandTotal}`;
+        document.getElementById('qrisImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrisData)}`;
+      } else {
+        qrisContainer.classList.add('hidden');
+      }
+
       document.getElementById('receiptModal').classList.remove('hidden');
     }
 
@@ -454,14 +511,15 @@
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({
             action: "LOG_TRANSACTION",
-            nama_file: `${summaryItem} - Total: Rp ${grandTotal.toLocaleString('id-ID')} ${isTaxActive ? '(Inc. PPN 11%)' : ''}`,
+            nama_file: `[${selectedPaymentMethod}] ${summaryItem} - Total: Rp ${grandTotal.toLocaleString('id-ID')} ${isTaxActive ? '(Inc. PPN 11%)' : ''}`,
             status: "Success"
           })
         });
 
-        alert("Pembayaran berhasil dan transaksi dicatat ke Spreadsheet!");
+        alert(`Pembayaran via ${selectedPaymentMethod} Berhasil! Transaksi telah dicatat.`);
         cart = [];
         document.getElementById('taxToggle').checked = false;
+        selectPayment('CASH');
         renderCart();
         document.getElementById('receiptModal').classList.add('hidden');
       } catch (error) {
