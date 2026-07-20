@@ -2,34 +2,195 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Cetak Nota & PDF</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cetak Nota Thermal & Log Spreadsheet</title>
+  <style>
+    /* -------------------------------------------------------------
+       1. Tampilan Layar Utama (Layar HP / Monitor PC)
+    ------------------------------------------------------------- */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f9;
+      margin: 0;
+      padding: 20px;
+    }
+    .form-container {
+      max-width: 400px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .form-group {
+      margin-bottom: 12px;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:disabled {
+      background-color: #aaa;
+    }
+
+    /* Template Nota (Sembunyi di tampilan monitor normal) */
+    #nota-print {
+      display: none;
+    }
+
+    /* -------------------------------------------------------------
+       2. Format Khusus Printer Thermal (Lebar 58mm)
+       Aturan @media print ini aktif HANYA saat tombol cetak ditekan
+    ------------------------------------------------------------- */
+    @media print {
+      /* Sembunyikan elemen input form dari kertas printer */
+      body * {
+        visibility: hidden;
+      }
+      
+      /* Atur ukuran kertas ke 58mm (standar printer thermal kecil) */
+      @page {
+        size: 58mm auto;
+        margin: 0;
+      }
+
+      /* Tampilkan hanya area Nota Thermal */
+      #nota-print, #nota-print * {
+        visibility: visible;
+      }
+      
+      #nota-print {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 48mm; /* Lebar area cetak fisik kertas 58mm */
+        padding: 2mm;
+        font-family: 'Courier New', Courier, monospace; /* Font struk kasir */
+        font-size: 12px;
+        color: #000;
+      }
+
+      .text-center { text-align: center; }
+      .text-right { text-align: right; }
+      .line { border-bottom: 1px dashed #000; margin: 6px 0; }
+      .item-row { display: flex; justify-content: space-between; }
+    }
+  </style>
 </head>
 <body>
-  <h2>Sistem Print & Nota</h2>
-  
-  <input type="text" id="namaFile" placeholder="Nama File / Nota">
-  <button onclick="simpanKeDatabase()">Cetak & Simpan Log</button>
+
+  <!-- FORM INPUT -->
+  <div class="form-container">
+    <h2>Input Transaksi</h2>
+    <div class="form-group">
+      <label>Nama Pelanggan / Nota:</label>
+      <input type="text" id="pelanggan" placeholder="Contoh: Budi">
+    </div>
+    <div class="form-group">
+      <label>Nama Item / Layanan:</label>
+      <input type="text" id="item" placeholder="Contoh: Print PDF A4 10 Lbr">
+    </div>
+    <div class="form-group">
+      <label>Total Biaya (Rp):</label>
+      <input type="number" id="harga" placeholder="Contoh: 15000">
+    </div>
+    <button id="btnSubmit" onclick="prosesCetakDanSimpan()">Cetak Nota & Simpan</button>
+  </div>
+
+  <!-- AREA TEMPLATE NOTA THERMAL (Dipersiapkan untuk printer) -->
+  <div id="nota-print">
+    <div class="text-center">
+      <strong>TOKO PRINT & SCAN</strong><br>
+      Jl. Contoh No. 123<br>
+      --------------------------------
+    </div>
+    <div>Tanggal: <span id="p-tanggal"></span></div>
+    <div>Plg: <span id="p-pelanggan"></span></div>
+    <div class="line"></div>
+    <div class="item-row">
+      <span id="p-item">Item</span>
+    </div>
+    <div class="item-row">
+      <span>Total:</span>
+      <strong id="p-harga">Rp 0</strong>
+    </div>
+    <div class="line"></div>
+    <div class="text-center">
+      Terima Kasih!<br>
+      Simpan Nota Ini
+    </div>
+  </div>
 
   <script>
-    const SPREADSHEET_API_URL = "https://script.google.com/macros/s/AKfycbwyxgo3OgB73c3fGjxd7_En-BKcKFY_fDjolbRde0TlNA2iIm1y3pTCDTj8YEfVhTHWyA/exec";
+    // URL Web App Google Apps Script milik Anda
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwyxgo3OgB73c3fGjxd7_En-BKcKFY_fDjolbRde0TlNA2iIm1y3pTCDTj8YEfVhTHWyA/exec";
 
-    async function simpanKeDatabase() {
-      const namaFile = document.getElementById('namaFile').value;
-      
-      const payload = {
-        nama_file: namaFile,
-        status: "Printed"
-      };
+    async function prosesCetakDanSimpan() {
+      const pelanggan = document.getElementById('pelanggan').value || "Umum";
+      const item = document.getElementById('item').value || "Jasa Print/Scan";
+      const harga = document.getElementById('harga').value || "0";
+      const tanggal = new Date().toLocaleString('id-ID');
+
+      if(!item || harga == "0") {
+        alert("Mohon isi Nama Item dan Harga terlebih dahulu!");
+        return;
+      }
+
+      // 1. Isikan data ke Template Nota Thermal
+      document.getElementById('p-tanggal').innerText = tanggal;
+      document.getElementById('p-pelanggan').innerText = pelanggan;
+      document.getElementById('p-item').innerText = item;
+      document.getElementById('p-harga').innerText = "Rp " + parseInt(harga).toLocaleString('id-ID');
+
+      // 2. Jalankan Perintah Print Browser (Thermal Printer)
+      window.print();
+
+      // 3. Kirim data transaksi ke Google Spreadsheet secara asynchronous
+      const btn = document.getElementById('btnSubmit');
+      btn.innerText = "Menyimpan ke Spreadsheet...";
+      btn.disabled = true;
 
       try {
-        const response = await fetch(SPREADSHEET_API_URL, {
+        const response = await fetch(APPS_SCRIPT_URL, {
           method: "POST",
-          body: JSON.stringify(payload)
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8", 
+          },
+          body: JSON.stringify({
+            nama_file: `${pelanggan} - ${item} (Rp${harga})`,
+            status: "Printed & Saved"
+          })
         });
-        
-        alert("Data cetak berhasil tersimpan di Google Sheets!");
+
+        alert("Data transaksi berhasil tercatat di Google Spreadsheet!");
       } catch (error) {
-        console.error("Gagal menyimpan:", error);
+        console.error("Gagal menyimpan ke Google Sheets:", error);
+        alert("Nota terprint, namun gagal menyimpan log ke Spreadsheet.");
+      } finally {
+        btn.innerText = "Cetak Nota & Simpan";
+        btn.disabled = false;
       }
     }
   </script>
