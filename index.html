@@ -208,7 +208,7 @@
     <span id="taxStatusLabel" style="font-size: 12px; font-weight: bold; color: #22c55e;">Exclude</span>
     <label class="switch" style="position: relative; display: inline-block; width: 48px; height: 26px;">
       <input type="checkbox" id="taxToggle" checked onchange="updateCartUI()" style="opacity: 0; width: 0; height: 0;">
-      <span class="slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 34px;"></span>
+      <span class="slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #22c55e; transition: .3s; border-radius: 34px;"></span>
     </label>
   </div>
 </div>
@@ -520,7 +520,7 @@
         // JIKA SKELAR OFF = EXCLUDE
         if(taxStatusLabel) {
           taxStatusLabel.innerText = "Exclude";
-          taxStatusLabel.style.color = "#ef4444";
+          taxStatusLabel.style.color = "#22c55e";
         }
         taxAmount = Math.round(subtotal * 0.11);
         grandTotal = subtotal + taxAmount;
