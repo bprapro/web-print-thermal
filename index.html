@@ -66,6 +66,19 @@
           <i data-lucide="package-plus" class="w-5 h-5 text-gray-500"></i>
           Kelola Produk Katalog
         </button>
+        <!-- Cari daftar menu di dalam <aside id="sidebar"> -->
+<div class="px-4 py-2 space-y-2">
+
+  <!-- Tombol Kelola Produk Katalog yang sudah ada -->
+  <!-- <button onclick="openModal('manageModal')" ...>Kelola Produk Katalog</button> -->
+
+  <!-- TAMBAHKAN TOMBOL PRINTER INI TEPAT DI BAWAHNYA -->
+  <button id="btnBluetooth" onclick="handleBluetoothFromSidebar()" class="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-2xl transition text-xs font-semibold">
+    <i data-lucide="printer" class="w-4 h-4 text-blue-600"></i>
+    <span id="btStatusText">Hubungkan Printer</span>
+  </button>
+
+</div>
       </nav>
     </div>
 
@@ -74,9 +87,6 @@
     </div>
     <!-- Tambahkan ini di dalam <aside id="sidebar"> -->
 <div class="px-4 py-2 border-t border-gray-100">
-  <button id="btnBluetooth" onclick="connectBluetooth()" class="hidden ...">
-  <!-- Isi tombol -->
-</button>
 </div>
   </aside>
 
@@ -356,27 +366,27 @@
           if (foundChar) break;
         }
 
-        if (foundChar) {
-          bleCharacteristic = foundChar;
-          document.getElementById('btStatusText').innerText = "Printer Terhubung";
-          document.getElementById('btnBluetooth').className = "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-50 text-emerald-700 rounded-2xl text-xs font-semibold border border-emerald-100";
-          alert("Printer thermal berhasil dihubungkan!");
-        } else {
-          alert("Printer terdeteksi, tapi sistem gagal menemukan jalur cetak (Write Characteristic).");
-        }
-      } catch (err) {
-        console.error("Bluetooth gagal:", err);
-        alert("Gagal menghubungkan. Pastikan Bluetooth HP/Laptop aktif dan printer sudah dinyalakan.");
-      }
-    }
+        // Di dalam fungsi connectBluetooth() saat koneksi berhasil:
+if (foundChar) {
+  bleCharacteristic = foundChar;
+  document.getElementById('btStatusText').innerText = "Printer Terhubung";
+  
+  // Mengubah gaya tombol di sidebar menjadi hijau lembut saat terhubung
+  const btn = document.getElementById('btnBluetooth');
+  if (btn) {
+    btn.className = "w-full flex items-center gap-3 px-4 py-3 bg-emerald-50 text-emerald-700 rounded-2xl transition text-xs font-semibold border border-emerald-100";
+  }
+  
+  alert("Printer thermal berhasil dihubungkan!");
+}
 
     async function handleBluetoothFromSidebar() {
-      // 1. Tutup menu sidebar otomatis
-      toggleSidebar(); 
-      
-      // 2. Jalankan koneksi bluetooth
-      await connectBluetooth();
-    }
+  // 1. Otomatis menutup sidebar
+  toggleSidebar(); 
+  
+  // 2. Jalankan fungsi koneksi bluetooth
+  await connectBluetooth();
+}
 
     async function sendToPrinterBluetooth(text) {
       if (!bleCharacteristic) {
