@@ -500,7 +500,7 @@
         </div>
       `).join('');
 
-      // LOGIKA SAKELAR PAJAK
+      // LOGIKA SAKELAR PAJAK BARU
       const taxToggle = document.getElementById('taxToggle');
       const taxStatusLabel = document.getElementById('taxStatusLabel');
       let taxAmount = 0;
@@ -508,23 +508,23 @@
       let taxLabel = "";
 
       if (taxToggle && taxToggle.checked) {
-        // JIKA SKELAR ON = INCLUDE
-        if(taxStatusLabel) {
-          taxStatusLabel.innerText = "Include";
-          taxStatusLabel.style.color = "#10b981";
-        }
-        taxAmount = Math.round(subtotal - (subtotal / 1.11));
-        grandTotal = subtotal;
-        taxLabel = "Pajak Incl (11%):";
-      } else {
-        // JIKA SKELAR OFF = EXCLUDE
-        if(taxStatusLabel) {
+        // JIKA SKELAR ON (HIJAU) = EXCLUDE
+        if (taxStatusLabel) {
           taxStatusLabel.innerText = "Exclude";
-          taxStatusLabel.style.color = "#22c55e";
+          taxStatusLabel.style.color = "#22c55e"; // Teks Hijau
         }
         taxAmount = Math.round(subtotal * 0.11);
         grandTotal = subtotal + taxAmount;
         taxLabel = "Pajak Excl (11%):";
+      } else {
+        // JIKA SKELAR OFF (ABU-ABU) = INCLUDE
+        if (taxStatusLabel) {
+          taxStatusLabel.innerText = "Include";
+          taxStatusLabel.style.color = "#9ca3af"; // Teks Abu-abu
+        }
+        taxAmount = Math.round(subtotal - (subtotal / 1.11));
+        grandTotal = subtotal;
+        taxLabel = "Pajak Incl (11%):";
       }
 
       const paymentMethods = document.getElementsByName('paymentMethod');
