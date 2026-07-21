@@ -753,8 +753,17 @@
         }
 
         let receiptText = "";
-        receiptText += "      TOKO BU AINA      \n";
-        receiptText += "Struk Pembayaran Thermal\n";
+// Perintah ESC/POS untuk rata tengah
+const ESC = '\x1B';
+const CENTER = ESC + 'a' + '\x01';
+const LEFT = ESC + 'a' + '\x00';
+
+let receiptText = "";
+receiptText += CENTER; // Ubah teks ke rata tengah
+receiptText += "TOKO BU AINA\n";
+receiptText += "Struk Pembayaran Thermal\n";
+receiptText += "--------------------------------\n";
+receiptText += LEFT; // Kembalikan ke rata kiri untuk daftar barang
         receiptText += "--------------------------------\n";
         
         cart.forEach(item => {
