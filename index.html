@@ -428,7 +428,10 @@
       } else {
         cart.push({ name, price, qty: 1 });
       }
-      function updateCartUI() {
+      updateCartUI();
+    }
+
+    function updateCartUI() {
       const badge = document.getElementById('cartBadge');
       const totalQty = cart.reduce((acc, item) => acc + item.qty, 0);
       
@@ -468,7 +471,7 @@
         </div>
       `).join('');
 
-      // LOGIKA SAKELAR PAJAK BARU
+      // LOGIKA SAKELAR PAJAK
       const taxToggle = document.getElementById('taxToggle');
       const taxStatusLabel = document.getElementById('taxStatusLabel');
       let taxAmount = 0;
@@ -476,14 +479,16 @@
       let taxLabel = "";
 
       if (taxToggle && taxToggle.checked) {
-        // JIKA AKTIF (GREEN) = INCLUDE
-        taxStatusLabel.innerText = "Include";
-        taxStatusLabel.style.color = "#10b981";
+        // JIKA SKELAR ON = INCLUDE
+        if(taxStatusLabel) {
+          taxStatusLabel.innerText = "Include";
+          taxStatusLabel.style.color = "#10b981";
+        }
         taxAmount = Math.round(subtotal - (subtotal / 1.11));
         grandTotal = subtotal;
         taxLabel = "Pajak Incl (11%):";
       } else {
-        // JIKA MATI (RED) = EXCLUDE
+        // JIKA SKELAR OFF = EXCLUDE
         if(taxStatusLabel) {
           taxStatusLabel.innerText = "Exclude";
           taxStatusLabel.style.color = "#ef4444";
@@ -568,7 +573,6 @@
       document.getElementById('btnCancelEdit').classList.remove('hidden');
     }
 
-    // 1. PASTIKAN FUNGSI HANDLE SAVE PRODUK INI MENGGUNAKAN NAMA FUNGSI YANG BENAR
     async function handleSaveProduct(event) {
       event.preventDefault();
       
@@ -583,7 +587,6 @@
       
       if (fileInput && fileInput.files.length > 0) {
         try {
-          // Memanggil fungsi konversi gambar (Nama fungsi sudah diperbaiki)
           base64File = await processFileToBase64(fileInput.files[0]);
         } catch (err) {
           alert("Gagal memproses file gambar: " + err);
@@ -599,7 +602,7 @@
         price: Number(price),
         sku: sku,
         image: imageUrl || "",
-        fileData: base64File // Data base64 yang sudah fix dikirim ke script
+        fileData: base64File
       };
 
       try {
@@ -632,7 +635,6 @@
       }
     }
 
-    // 2. GANTI FUNGSI KONVERSI GAMBAR INI (Nama fungsi diubah menjadi 'processFileToBase64' agar sinkron)
     function processFileToBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -642,7 +644,7 @@
           img.src = event.target.result;
           img.onload = () => {
             const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 600; // Kompresi ukuran gambar agar tidak terlalu besar saat dikirim
+            const MAX_WIDTH = 600;
             let width = img.width;
             let height = img.height;
 
@@ -656,7 +658,6 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
             
-            // Output base64 murni
             resolve(canvas.toDataURL('image/jpeg', 0.7));
           };
         };
@@ -683,7 +684,6 @@
 
       let subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
       
-      // LOGIKA SAKELAR DI CHECKOUT
       const taxToggle = document.getElementById('taxToggle');
       let taxAmount = 0;
       let grandTotal = subtotal;
@@ -766,6 +766,6 @@
         alert("Gagal mencatat transaksi ke Spreadsheet.");
       }
     }
-  </script>
+</script>
 </body>
 </html>
