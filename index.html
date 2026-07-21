@@ -72,6 +72,13 @@
     <div class="text-xs text-gray-400 text-center">
       Toko Bu Aina POS System v2.0
     </div>
+    <!-- Tambahkan ini di dalam <aside id="sidebar"> -->
+<div class="px-4 py-2 border-t border-gray-100">
+  <button id="btnBluetooth" onclick="handleBluetoothFromSidebar()" class="w-full flex items-center gap-3 px-3 py-2.5 text-gray-600 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl transition text-xs font-semibold">
+    <i data-lucide="printer" class="w-4 h-4"></i>
+    <span id="btStatusText">Hubungkan Printer</span>
+  </button>
+</div>
   </aside>
 
   <!-- HEADER TOP BAR -->
@@ -348,6 +355,14 @@
         console.error("Bluetooth gagal:", err);
         alert("Gagal menghubungkan. Pastikan Bluetooth HP/Laptop aktif dan printer sudah dinyalakan.");
       }
+    }
+
+    async function handleBluetoothFromSidebar() {
+      // 1. Tutup menu sidebar otomatis
+      toggleSidebar(); 
+      
+      // 2. Jalankan koneksi bluetooth
+      await connectBluetooth();
     }
 
     async function sendToPrinterBluetooth(text) {
