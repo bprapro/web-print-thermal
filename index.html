@@ -3,319 +3,260 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Toko Bu Aina - POS & Catalog</title>
-  
+  <title>Toko Bu Aina - POS System</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  
-  <!-- HTML2Canvas & jsPDF untuk cetak Struk -->
+  <!-- html2canvas & jsPDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700&family=Space+Mono:wght=400;700&display=swap');
-    
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-    }
-    
-    .receipt-font {
-      font-family: 'Space Mono', monospace;
-    }
-
-    /* Custom Scrollbar */
-    .custom-scroll::-webkit-scrollbar {
-      width: 4px;
-    }
-    .custom-scroll::-webkit-scrollbar-track {
-      background: #f1f1f1;
-      border-radius: 10px;
-    }
-    .custom-scroll::-webkit-scrollbar-thumb {
-      background: #d1d5db;
-      border-radius: 10px;
-    }
-    .custom-scroll::-webkit-scrollbar-thumb:hover {
-      background: #9ca3af;
+    /* Sakelar Pajak Custom */
+    .switch input:checked + .slider { background-color: #22c55e; }
+    .switch input:checked + .slider:before { transform: translateX(22px); }
+    .slider:before {
+      position: absolute; content: ""; height: 20px; width: 20px;
+      left: 3px; bottom: 3px; background-color: white;
+      transition: .3s; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
   </style>
 </head>
-<body class="h-screen flex flex-col p-3 sm:p-4 gap-3 sm:gap-4 overflow-hidden relative bg-gray-100">
+<body class="bg-gray-100 font-sans text-gray-800 antialiased min-h-screen">
 
   <!-- OVERLAY SIDEBAR -->
-  <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/40 z-40 hidden transition-opacity duration-300"></div>
+  <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/40 z-40 hidden transition-opacity"></div>
 
-  <!-- SIDEBAR SLIDE-IN -->
-  <aside id="sidebar" class="fixed top-0 left-0 h-full w-72 bg-white z-50 transform -translate-x-full transition-transform duration-300 ease-in-out shadow-2xl p-6 flex flex-col justify-between">
-    <div class="space-y-6">
-      <div class="flex items-center justify-between">
+  <!-- SIDEBAR KIRI -->
+  <aside id="sidebar" class="fixed top-0 left-0 w-80 h-full bg-white z-50 transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col justify-between shadow-2xl">
+    <!-- Bagian Atas Sidebar -->
+    <div>
+      <!-- Header Sidebar -->
+      <div class="flex items-center justify-between p-5 border-b border-gray-100">
         <div class="flex items-center gap-3">
-          <div class="bg-black text-white p-2.5 rounded-2xl"><i data-lucide="store" class="w-5 h-5"></i></div>
-          <span class="font-bold text-xl text-gray-800">Toko Bu Aina</span>
+          <div class="p-2.5 bg-black text-white rounded-2xl shadow-sm">
+            <i data-lucide="store" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h2 class="font-bold text-base text-gray-900 leading-tight">Toko Bu Aina</h2>
+            <p class="text-[11px] text-gray-400">POS System v2.0</p>
+          </div>
         </div>
-        <button onclick="toggleSidebar()" class="p-2 text-gray-400 hover:text-black rounded-xl">
+        <button onclick="toggleSidebar()" class="p-2 text-gray-400 hover:text-gray-600 rounded-xl hover:bg-gray-100 transition">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <nav class="space-y-2">
-        <button onclick="openModal('manageModal')" class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-gray-50 text-gray-700 font-semibold hover:bg-gray-100 transition text-sm">
+      <!-- Menu Utama -->
+      <div class="p-4 space-y-2">
+        <button onclick="openModal('manageModal'); toggleSidebar();" class="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-2xl transition text-sm font-semibold">
           <i data-lucide="package-plus" class="w-5 h-5 text-gray-500"></i>
-          Kelola Produk Katalog
+          <span>Kelola Produk Katalog</span>
         </button>
-        <!-- Cari daftar menu di dalam <aside id="sidebar"> -->
-<div class="px-4 py-2 space-y-2">
-
-  <!-- Tombol Kelola Produk Katalog yang sudah ada -->
-  <!-- <button onclick="openModal('manageModal')" ...>Kelola Produk Katalog</button> -->
-
-  <!-- TAMBAHKAN TOMBOL PRINTER INI TEPAT DI BAWAHNYA -->
-  <button id="btnBluetooth" onclick="handleBluetoothFromSidebar()" class="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-2xl transition text-xs font-semibold">
-    <i data-lucide="printer" class="w-4 h-4 text-blue-600"></i>
-    <span id="btStatusText">Hubungkan Printer</span>
-  </button>
-
-</div>
-      </nav>
-    </div>
-
-    <div class="text-xs text-gray-400 text-center">
-      Toko Bu Aina POS System v2.0
-    </div>
-    <!-- Tambahkan ini di dalam <aside id="sidebar"> -->
-<div class="px-4 py-2 border-t border-gray-100">
-</div>
-  </aside>
-
-  <!-- HEADER TOP BAR -->
-  <header class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center bg-white p-3.5 sm:px-6 sm:py-3.5 rounded-3xl shadow-sm gap-3">
-    <div class="flex items-center justify-between sm:justify-start gap-3">
-      <button onclick="toggleSidebar()" class="p-2.5 bg-gray-50 hover:bg-gray-100 rounded-2xl transition border border-gray-100">
-        <i data-lucide="menu" class="w-5 h-5 text-gray-700"></i>
-      </button>
-      <div>
-        <h1 class="font-bold text-base sm:text-lg text-gray-800">Selamat Datang!</h1>
-        <p class="text-[10px] sm:text-xs text-gray-400">POS Catalog - Toko Bu Aina</p>
       </div>
     </div>
 
-    <div class="flex items-center gap-2">
-      <!-- TOMBOL BLUETOOTH PRINTER -->
-      <button id="btnBluetooth" onclick="connectBluetooth()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-2xl text-xs font-semibold border border-blue-100 transition">
-        <i data-lucide="bluetooth"></i>
-        <span id="btStatusText">Hubungkan Printer</span>
-      </button>
+    <!-- Bagian Bawah Sidebar (Panel Printer Bluetooth) -->
+    <div class="p-4 m-4 bg-gray-50 rounded-3xl border border-gray-100 space-y-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="printer" class="w-4 h-4 text-gray-500"></i>
+          <span class="text-xs font-bold text-gray-700">Printer Bluetooth</span>
+        </div>
+        <!-- Badge Indikator Status -->
+        <span id="printerStatusBadge" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-gray-200 text-gray-600">
+          Terputus
+        </span>
+      </div>
 
-      <button onclick="openModal('manageModal')" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-2xl text-xs font-semibold border border-gray-100 transition">
-        <i data-lucide="plus-circle" class="w-4 h-4"></i>
-        Kelola Produk
-      </button>
+      <!-- Detail Nama Printer -->
+      <div class="bg-white p-2.5 rounded-2xl border border-gray-100">
+        <p class="text-[10px] text-gray-400">Perangkat:</p>
+        <p id="printerDeviceName" class="text-xs font-bold text-gray-800 truncate">Belum Terhubung</p>
+      </div>
 
-      <button onclick="openModal('cartModal')" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-black text-white rounded-2xl text-xs font-semibold shadow-lg shadow-black/10 hover:bg-gray-800 transition relative">
-        <i data-lucide="shopping-cart" class="w-4 h-4"></i>
-        <span>Order</span>
-        <span id="cartBadge" class="hidden bg-lime-400 text-black font-bold text-[10px] w-5 h-5 rounded-full items-center justify-center -mr-1">0</span>
+      <!-- Tombol Aksi Bluetooth -->
+      <button id="btnBluetoothSidebar" onclick="handleBluetoothFromSidebar()" class="w-full py-2.5 bg-black text-white font-bold text-xs rounded-2xl hover:bg-gray-800 transition shadow-sm flex items-center justify-center gap-2">
+        <i data-lucide="bluetooth" class="w-4 h-4"></i>
+        <span id="btSidebarText">Hubungkan Printer</span>
       </button>
+    </div>
+  </aside>
+
+  <!-- HEADER UTAMA (TIDAK ADA TOMBOL BLUETOOTH DI SINI) -->
+  <header class="bg-white shadow-sm sticky top-0 z-30">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <button onclick="toggleSidebar()" class="p-2 hover:bg-gray-100 rounded-2xl transition">
+          <i data-lucide="menu" class="w-6 h-6 text-gray-700"></i>
+        </button>
+        <h1 class="font-bold text-lg text-gray-800 hidden sm:block">Toko Bu Aina!</h1>
+      </div>
+
+      <!-- Navigasi Kanan Header -->
+      <div class="flex items-center gap-3">
+        <!-- Tombol Kelola Produk -->
+        <button onclick="openModal('manageModal')" class="flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl font-semibold text-xs transition">
+          <i data-lucide="plus-circle" class="w-4 h-4"></i>
+          <span>Kelola Produk</span>
+        </button>
+
+        <!-- Tombol Order / Keranjang -->
+        <button onclick="openModal('cartModal')" class="relative flex items-center gap-2 px-5 py-2.5 bg-black text-white hover:bg-gray-800 rounded-2xl font-semibold text-xs transition shadow-sm">
+          <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+          <span>Order</span>
+          <span id="cartBadge" class="hidden absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full items-center justify-center border-2 border-white">0</span>
+        </button>
+      </div>
     </div>
   </header>
 
-  <!-- MAIN AREA (CATALOG GRID) -->
-  <main class="flex-1 flex flex-col gap-4 overflow-hidden">
-    <div id="productGrid" class="flex-1 overflow-y-auto custom-scroll grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 pr-1">
-      <p class="col-span-full text-center py-10 text-gray-400 text-sm">Memuat daftar produk dari Spreadsheet...</p>
+  <!-- KONTEN UTAMA: KATALOG PRODUK -->
+  <main class="max-w-5xl mx-auto px-4 py-6">
+    <div id="productGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+      <!-- Item Katalog dimasukkan via JS -->
     </div>
   </main>
 
-  <!-- MODAL: KELOLA PRODUK -->
+  <!-- MODAL KELOLA PRODUK -->
   <div id="manageModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col p-5 shadow-2xl space-y-4 overflow-hidden">
+    <div class="bg-white rounded-3xl w-full max-w-lg p-5 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl">
       <div class="flex justify-between items-center pb-2 border-b">
-        <h2 class="font-bold text-base text-gray-800">Kelola Produk & Stok</h2>
-        <button onclick="closeModal('manageModal')" class="p-1 text-gray-400 hover:text-black">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
+        <h3 id="formTitle" class="font-bold text-sm text-gray-800">Tambah Produk Baru</h3>
+        <button onclick="closeModal('manageModal')" class="p-1 text-gray-400 hover:text-gray-600 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
 
-      <!-- FORM TAMBAH / EDIT PRODUK -->
-      <form onsubmit="handleSaveProduct(event)" class="bg-gray-50 p-3.5 sm:p-4 rounded-2xl space-y-3">
-        <div class="flex justify-between items-center">
-          <h3 id="formTitle" class="text-xs font-bold text-gray-700 uppercase">Tambah Produk Baru</h3>
-          <button type="button" id="btnCancelEdit" onclick="resetForm()" class="text-[11px] text-red-500 font-semibold hidden hover:underline">Batal Edit</button>
+      <!-- Form Tambah/Edit Produk -->
+      <form onsubmit="handleSaveProduct(event)" class="space-y-3">
+        <input type="hidden" id="editProdId">
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-600 mb-1">Nama Produk</label>
+          <input type="text" id="newProdName" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-black outline-none">
         </div>
-
-        <input type="hidden" id="editProdId" value="">
-
         <div class="grid grid-cols-2 gap-2">
-          <input type="text" id="newProdName" placeholder="Nama Produk *" required class="p-2.5 text-xs bg-white rounded-xl border outline-none focus:ring-2 focus:ring-lime-400">
-          <input type="number" id="newProdPrice" placeholder="Harga (Rp) *" required class="p-2.5 text-xs bg-white rounded-xl border outline-none focus:ring-2 focus:ring-lime-400">
+          <div>
+            <label class="block text-[11px] font-semibold text-gray-600 mb-1">Harga (Rp)</label>
+            <input type="number" id="newProdPrice" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-black outline-none">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-gray-600 mb-1">SKU</label>
+            <input type="text" id="newProdSku" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-black outline-none">
+          </div>
         </div>
-        
-        <div class="grid grid-cols-2 gap-2">
-          <input type="text" id="newProdSku" placeholder="Kode SKU (Opsional)" class="p-2.5 text-xs bg-white rounded-xl border outline-none focus:ring-2 focus:ring-lime-400">
-          <input type="url" id="newProdImage" placeholder="URL Foto (Opsional)" class="p-2.5 text-xs bg-white rounded-xl border outline-none focus:ring-2 focus:ring-lime-400">
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-600 mb-1">URL Gambar (Opsional)</label>
+          <input type="url" id="newProdImage" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-black outline-none" placeholder="https://...">
         </div>
-
-        <!-- INPUT UPLOAD FOTO DARI HP/KOMPUTER -->
-        <div class="space-y-1">
-          <label class="text-[10px] font-bold text-gray-500 uppercase">Atau Upload Foto dari Galeri/HP:</label>
-          <input type="file" id="newProdFile" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-600 mb-1">Atau Upload Gambar</label>
+          <input type="file" id="newProdFile" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-gray-100 hover:file:bg-gray-200">
         </div>
-
-        <button type="submit" id="btnAddProdSubmit" class="w-full py-2.5 bg-black text-white font-bold text-xs rounded-xl hover:bg-gray-800 transition">
-          + Simpan Produk Ke Spreadsheet
-        </button>
+        <div class="flex gap-2 pt-2">
+          <button type="button" id="btnCancelEdit" onclick="resetForm()" class="hidden w-1/3 py-2.5 bg-gray-200 text-gray-700 font-bold text-xs rounded-xl">Batal</button>
+          <button type="submit" id="btnAddProdSubmit" class="w-full py-2.5 bg-black text-white font-bold text-xs rounded-xl hover:bg-gray-800 transition">+ Simpan Produk Ke Spreadsheet</button>
+        </div>
       </form>
 
-      <!-- LIST PRODUK -->
-      <div class="flex-1 overflow-y-auto custom-scroll pr-1">
-        <h3 class="text-xs font-bold text-gray-500 uppercase mb-2">Daftar Produk Terpasang</h3>
-        <div id="manageProductList" class="space-y-2">
-          <!-- Item diinjeksi via JS -->
+      <!-- Daftar Produk Terdaftar -->
+      <div class="pt-4 border-t">
+        <h4 class="font-bold text-xs text-gray-700 mb-2">Daftar Produk Katalog</h4>
+        <div id="manageProductList" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+          <!-- Item daftar produk dari JS -->
         </div>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: KERANJANG & CHECKOUT -->
+  <!-- MODAL KERANJANG / ORDER -->
   <div id="cartModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl w-full max-w-md max-h-[95vh] flex flex-col p-5 shadow-2xl space-y-3 overflow-hidden">
+    <div class="bg-white rounded-3xl w-full max-w-md p-5 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl">
       <div class="flex justify-between items-center pb-2 border-b">
-        <h2 class="font-bold text-base text-gray-800">Keranjang Belanja</h2>
-        <button onclick="closeModal('cartModal')" class="p-1 text-gray-400 hover:text-black">
-          <i data-lucide="x" class="w-5 h-5"></i>
+        <h3 class="font-bold text-sm text-gray-800">Keranjang Belanja</h3>
+        <button onclick="closeModal('cartModal')" class="p-1 text-gray-400 hover:text-gray-600 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <!-- List Item Keranjang -->
+      <div id="cartItems" class="space-y-2 max-h-40 overflow-y-auto pr-1">
+        <!-- Item keranjang dari JS -->
+      </div>
+
+      <!-- SAKELAR PAJAK (11%) -->
+      <div class="flex items-center justify-between p-3 bg-gray-50 rounded-2xl">
+        <span class="text-xs font-semibold text-gray-600">Status Pajak (11%):</span>
+        <div class="flex items-center gap-2">
+          <span id="taxStatusLabel" class="text-xs font-bold text-emerald-600">Exclude</span>
+          <label class="switch relative inline-block w-12 h-6">
+            <input type="checkbox" id="taxToggle" checked onchange="updateCartUI()" class="opacity-0 w-0 h-0">
+            <span class="slider absolute cursor-pointer inset-0 bg-slate-300 transition-all rounded-full"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- PILIHAN METODE PEMBAYARAN -->
+      <div class="space-y-1.5">
+        <label class="block text-xs font-semibold text-gray-600">Metode Pembayaran:</label>
+        <div class="grid grid-cols-2 gap-2">
+          <label class="flex items-center gap-2 p-2.5 border rounded-xl text-xs font-semibold cursor-pointer hover:bg-gray-50">
+            <input type="radio" name="paymentMethod" value="Tunai" checked onchange="updateCartUI()"> Tunai
+          </label>
+          <label class="flex items-center gap-2 p-2.5 border rounded-xl text-xs font-semibold cursor-pointer hover:bg-gray-50">
+            <input type="radio" name="paymentMethod" value="QRIS" onchange="updateCartUI()"> QRIS
+          </label>
+        </div>
+      </div>
+
+      <!-- TAMPILAN QRIS (JIKA DIPILIH) -->
+      <div id="qrisContainer" class="hidden text-center p-3 border rounded-2xl bg-gray-50 space-y-2">
+        <p class="text-[11px] text-gray-500 font-semibold">Scan QRIS di bawah ini:</p>
+        <img id="qrisImage" src="" class="w-36 h-36 mx-auto rounded-xl border bg-white p-1">
+        <p id="qrisTotalNotice" class="text-xs font-bold text-emerald-600"></p>
+      </div>
+
+      <!-- TOTAL BELANJA -->
+      <div class="flex justify-between items-center pt-2 border-t font-bold text-sm">
+        <span>Total Akhir:</span>
+        <span id="cartTotalText" class="text-emerald-600 text-base">Rp 0</span>
+      </div>
+
+      <!-- TOMBOL PROSES CHECKOUT -->
+      <div class="grid grid-cols-2 gap-2 pt-2">
+        <button onclick="processCheckout('pdf')" class="py-2.5 bg-gray-800 text-white font-bold text-xs rounded-xl hover:bg-gray-900 transition flex items-center justify-center gap-1.5">
+          <i data-lucide="file-text" class="w-4 h-4"></i> Cetak PDF
+        </button>
+        <button onclick="processCheckout('bluetooth')" class="py-2.5 bg-blue-600 text-white font-bold text-xs rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-1.5">
+          <i data-lucide="printer" class="w-4 h-4"></i> Cetak Struk BT
         </button>
       </div>
 
-      <div id="cartItems" class="overflow-y-auto custom-scroll space-y-2 max-h-32 pr-1">
-        <!-- Item keranjang diinjeksi JS -->
-      </div>
-
-      <!-- OPSI PEMBAYARAN & PAJAK -->
-      <div class="bg-gray-50 p-3 rounded-2xl space-y-2 border text-xs">
-        <div>
-          <label class="block font-bold text-gray-600 mb-1 text-[11px]">Metode Pembayaran:</label>
-          <div class="grid grid-cols-2 gap-2">
-            <label class="flex items-center gap-2 p-2 bg-white border rounded-xl cursor-pointer hover:border-black transition">
-              <input type="radio" name="paymentMethod" value="Tunai" checked onchange="updateCartUI()" class="accent-black">
-              <span class="font-semibold text-gray-700">Tunai</span>
-            </label>
-            <label class="flex items-center gap-2 p-2 bg-white border rounded-xl cursor-pointer hover:border-black transition">
-              <input type="radio" name="paymentMethod" value="QRIS" onchange="updateCartUI()" class="accent-black">
-              <span class="font-semibold text-gray-700">QRIS</span>
-            </label>
+      <!-- DRAFT STRUK UNTUK CETAK PDF (HIDDEN DARI TAMPILAN) -->
+      <div class="hidden">
+        <div id="thermalReceiptPaper" class="p-4 bg-white text-black font-mono text-[10px] w-56">
+          <div style="text-align: center; margin-bottom: 8px;">
+            <h3 style="font-weight: bold; font-size: 13px; margin: 0;">TOKO BU AINA</h3>
+            <p style="font-size: 9px; color: #4b5563; margin: 0;">Struk Pembayaran Thermal</p>
           </div>
-        </div>
-
-        <div>
-          <label class="block font-bold text-gray-600 mb-1 text-[11px]">Opsi Pajak (PPN 11%):</label>
-          <div style="display: flex; items-center; justify-content: space-between; gap: 8px; margin: 10px 0;">
-  <span style="font-size: 12px; color: #4b5563;">Status Pajak (11%):</span>
-  <div style="display: flex; align-items: center; gap: 8px;">
-    <span id="taxStatusLabel" style="font-size: 12px; font-weight: bold; color: #22c55e;">Exclude</span>
-    <label class="switch" style="position: relative; display: inline-block; width: 48px; height: 26px;">
-      <input type="checkbox" id="taxToggle" checked onchange="updateCartUI()" style="opacity: 0; width: 0; height: 0;">
-      <span class="slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #22c55e; transition: .3s; border-radius: 34px;"></span>
-    </label>
-  </div>
-</div>
-
-<style>
-  /* Switch saat checked (ON / Kanan) -> Hijau */
-  .switch input:checked + .slider { 
-    background-color: #22c55e; 
-  }
-  .switch input:checked + .slider:before { 
-    transform: translateX(22px); 
-  }
-  /* Lingkaran putih sakelar */
-  .slider:before {
-    position: absolute; 
-    content: ""; 
-    height: 20px; 
-    width: 20px; 
-    left: 3px; 
-    bottom: 3px;
-    background-color: white; 
-    transition: .3s; 
-    border-radius: 50%;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-  }
-</style>
+          <div style="border-bottom: 1px dashed #000; margin: 6px 0;"></div>
+          <div id="receiptItems" class="space-y-1"></div>
+          <div style="border-bottom: 1px dashed #000; margin: 6px 0;"></div>
+          <div class="flex justify-between"><span>Subtotal:</span><span id="receiptSubtotal">Rp 0</span></div>
+          <div class="flex justify-between"><span id="receiptTaxLabel">Pajak (11%):</span><span id="receiptTax">Rp 0</span></div>
+          <div class="flex justify-between"><span>Bayar Via:</span><span id="receiptPaymentMethod">Tunai</span></div>
+          <div class="flex justify-between font-bold" style="margin-top: 4px;"><span>TOTAL:</span><span id="receiptTotal">Rp 0</span></div>
+          <div style="border-bottom: 1px dashed #000; margin: 6px 0;"></div>
+          <p style="text-align: center; margin-top: 6px;">Terima kasih telah berbelanja!</p>
         </div>
       </div>
 
-      <!-- TAMPILAN QR CODE QRIS -->
-      <div id="qrisContainer" class="hidden bg-slate-900 text-white p-3 rounded-2xl flex flex-col items-center justify-center text-center space-y-2">
-        <div class="flex items-center gap-1.5 font-bold text-xs text-lime-400">
-          <i data-lucide="qr-code" class="w-4 h-4"></i>
-          <span>SCAN QRIS TOKO BU AINA</span>
-        </div>
-        <div class="bg-white p-2 rounded-xl border border-gray-200">
-          <img id="qrisImage" src="" alt="QRIS Code" class="w-32 h-32 object-contain">
-        </div>
-        <p class="text-[10px] text-gray-300">Transfer tepat sesuai nominal: <span id="qrisTotalNotice" class="font-bold text-lime-400">Rp 0</span></p>
-      </div>
-
-      <div class="border-t pt-2 space-y-2 flex-1 flex flex-col justify-between overflow-y-auto custom-scroll">
-        <div class="flex justify-between items-center font-bold text-sm px-1">
-          <span>Total Pembayaran:</span>
-          <span id="cartTotalText" class="text-base text-emerald-600">Rp 0</span>
-        </div>
-
-        <!-- STRUK THERMAL PREVIEW -->
-        <div id="thermalReceiptPaper" class="w-full bg-yellow-50/60 border border-dashed border-gray-300 p-3.5 rounded-xl receipt-font text-xs shadow-inner my-1">
-          <div class="text-center font-bold text-sm">TOKO BU AINA</div>
-          <div class="text-center text-[10px] text-gray-500 mb-2">Struk Pembayaran Thermal</div>
-          <div class="border-b border-dashed border-gray-300 my-1.5"></div>
-          
-          <div id="receiptItems" class="space-y-1 my-1 text-[11px]"></div>
-          
-          <div class="border-b border-dashed border-gray-300 my-1.5"></div>
-          
-          <div class="space-y-0.5 text-[10px]">
-            <div class="flex justify-between">
-              <span>Subtotal:</span>
-              <span id="receiptSubtotal">Rp 0</span>
-            </div>
-            <div id="receiptTaxRow" class="flex justify-between text-gray-600">
-              <span id="receiptTaxLabel">Pajak (0%):</span>
-              <span id="receiptTax">Rp 0</span>
-            </div>
-            <div class="flex justify-between font-semibold pt-1 border-t border-dashed border-gray-200 text-[11px]">
-              <span>Metode Bayar:</span>
-              <span id="receiptPaymentMethod">Tunai</span>
-            </div>
-            <div class="flex justify-between font-bold text-xs pt-1 text-black">
-              <span>TOTAL:</span>
-              <span id="receiptTotal">Rp 0</span>
-            </div>
-          </div>
-          
-          <div class="text-center text-[9px] text-gray-400 mt-2.5">Terima kasih telah berbelanja!</div>
-        </div>
-
-        <!-- AKSI CETAK -->
-        <div class="flex gap-2">
-          <button onclick="processCheckout('pdf')" class="flex-1 py-3 bg-gray-700 text-white font-bold text-xs rounded-xl hover:bg-gray-800 transition flex items-center justify-center gap-2">
-            <i data-lucide="file-text" class="w-4 h-4"></i> Simpan PDF
-          </button>
-          <button onclick="processCheckout('bluetooth')" class="flex-[2] py-3 bg-emerald-600 text-white font-bold text-xs rounded-xl hover:bg-emerald-700 transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20">
-            <i data-lucide="printer" class="w-4 h-4"></i> Cetak Bluetooth & Simpan
-          </button>
-        </div>
-      </div>
     </div>
   </div>
-
   <script>
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwDZydSwNWn3SG9dphI7mU32Vz3LhWjX6M13WKZIn-sSzsU7je4AvO8301P1zj4yMie0A/exec";
     const CUSTOM_QRIS_IMAGE_URL = "qrisgopay.png";
 
     let products = [];
     let cart = [];
+    let bleDevice = null;
     let bleCharacteristic = null;
 
     lucide.createIcons();
@@ -339,6 +280,17 @@
       document.getElementById(id).classList.add('hidden');
     }
 
+    // UTILITAS SIDEBAR BLUETOOTH
+    async function handleBluetoothFromSidebar() {
+      if (bleDevice && bleDevice.gatt.connected) {
+        // Jika sudah terhubung, tindakan tombol adalah memutuskan koneksi
+        disconnectBluetooth();
+      } else {
+        // Jika belum terhubung, hubungkan
+        await connectBluetooth();
+      }
+    }
+
     async function connectBluetooth() {
       try {
         const device = await navigator.bluetooth.requestDevice({
@@ -351,6 +303,10 @@
           ]
         });
         
+        bleDevice = device;
+        // Event listener saat printer terputus mendadak
+        bleDevice.addEventListener('gattserverdisconnected', onBluetoothDisconnected);
+
         const server = await device.gatt.connect();
         const services = await server.getPrimaryServices();
         
@@ -368,31 +324,60 @@
 
         if (foundChar) {
           bleCharacteristic = foundChar;
-          document.getElementById('btStatusText').innerText = "Printer Terhubung";
-          
-          const btn = document.getElementById('btnBluetooth');
-          if (btn) {
-            btn.className = "w-full flex items-center gap-3 px-4 py-3 bg-emerald-50 text-emerald-700 rounded-2xl transition text-xs font-semibold border border-emerald-100";
-          }
-          
-          alert("Printer thermal berhasil dihubungkan!");
+          updateBluetoothUI(true, device.name || "Printer BT");
+          alert(`Printer "${device.name || 'BT Printer'}" berhasil terhubung!`);
         } else {
           alert("Printer terdeteksi, tetapi jalur cetak (Write Characteristic) tidak ditemukan.");
+          disconnectBluetooth();
         }
       } catch (err) {
         console.error("Bluetooth gagal:", err);
-        alert("Gagal menghubungkan printer.");
+        alert("Batal menghubungkan printer.");
       }
     }
 
-    async function handleBluetoothFromSidebar() {
-      toggleSidebar(); 
-      await connectBluetooth();
+    function disconnectBluetooth() {
+      if (bleDevice && bleDevice.gatt.connected) {
+        bleDevice.gatt.disconnect();
+      }
+      onBluetoothDisconnected();
+    }
+
+    function onBluetoothDisconnected() {
+      bleDevice = null;
+      bleCharacteristic = null;
+      updateBluetoothUI(false, "Belum Terhubung");
+    }
+
+    function updateBluetoothUI(isConnected, deviceName) {
+      const statusBadge = document.getElementById('printerStatusBadge');
+      const nameText = document.getElementById('printerDeviceName');
+      const btnText = document.getElementById('btSidebarText');
+      const btn = document.getElementById('btnBluetoothSidebar');
+
+      if (isConnected) {
+        if (statusBadge) {
+          statusBadge.innerText = "Terhubung";
+          statusBadge.className = "px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200";
+        }
+        if (nameText) nameText.innerText = deviceName;
+        if (btnText) btnText.innerText = "Putuskan Koneksi";
+        if (btn) btn.className = "w-full py-2.5 bg-red-500 text-white font-bold text-xs rounded-2xl hover:bg-red-600 transition shadow-sm flex items-center justify-center gap-2";
+      } else {
+        if (statusBadge) {
+          statusBadge.innerText = "Terputus";
+          statusBadge.className = "px-2 py-0.5 text-[10px] font-bold rounded-full bg-gray-200 text-gray-600";
+        }
+        if (nameText) nameText.innerText = "Belum Terhubung";
+        if (btnText) btnText.innerText = "Hubungkan Printer";
+        if (btn) btn.className = "w-full py-2.5 bg-black text-white font-bold text-xs rounded-2xl hover:bg-gray-800 transition shadow-sm flex items-center justify-center gap-2";
+      }
+      lucide.createIcons();
     }
 
     async function sendToPrinterBluetooth(text) {
       if (!bleCharacteristic) {
-        alert("Printer belum terhubung! Silakan hubungkan printer melalui menu sidebar.");
+        alert("Printer belum terhubung! Silakan hubungkan printer melalui sidebar.");
         return false;
       }
       try {
@@ -519,7 +504,7 @@
         `).join('');
       }
 
-      // LOGIKA SAKELAR PAJAK
+      // SAKELAR PAJAK
       const taxToggle = document.getElementById('taxToggle');
       const taxStatusLabel = document.getElementById('taxStatusLabel');
       let taxAmount = 0;
