@@ -712,20 +712,22 @@
       }
 
       let subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
-      
+     // LOGIKA SAKELAR DI CHECKOUT
       const taxToggle = document.getElementById('taxToggle');
       let taxAmount = 0;
       let grandTotal = subtotal;
       let taxLabel = "";
 
       if (taxToggle && taxToggle.checked) {
-        taxAmount = Math.round(subtotal - (subtotal / 1.11));
-        grandTotal = subtotal;
-        taxLabel = "Pajak Incl (11%):";
-      } else {
+        // EXCLUDE PAJAK
         taxAmount = Math.round(subtotal * 0.11);
         grandTotal = subtotal + taxAmount;
         taxLabel = "Pajak Excl (11%):";
+      } else {
+        // INCLUDE PAJAK
+        taxAmount = Math.round(subtotal - (subtotal / 1.11));
+        grandTotal = subtotal;
+        taxLabel = "Pajak Incl (11%):";
       }
       
       if (mode === 'pdf') {
