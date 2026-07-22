@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cetak Thermal 58mm</title>
+    <title>Cetak RPP02N Thermal 58mm</title>
     <!-- Library PDF.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
@@ -11,15 +11,27 @@
         body { background-color: #f4f4f9; padding: 15px; display: block; }
         .container { background: #fff; width: 100%; max-width: 450px; margin: 0 auto; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
         h2 { text-align: center; border-bottom: 2px dashed #333; padding-bottom: 10px; margin-bottom: 15px; font-size: 18px; }
+        
         .form-group { margin-bottom: 15px; }
-        label { font-weight: bold; display: block; margin-bottom: 5px; font-size: 14px; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; font-size: 13px; }
         input[type="file"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+        
+        /* Control Slider Adjustments */
+        .controls-box { background: #f8f9fa; border: 1px solid #e9ecef; padding: 10px; border-radius: 6px; margin-bottom: 15px; }
+        .slider-group { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .slider-group label { margin-bottom: 0; font-size: 12px; width: 35%; }
+        .slider-group input[type="range"] { width: 50%; }
+        .slider-group span { font-size: 12px; width: 15%; text-align: right; font-weight: bold; }
+
         .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
         button { padding: 12px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
         .btn-connect { background: #2980b9; color: white; }
         .btn-print { background: #27ae60; color: white; }
         .btn-print:disabled { background: #a5d6a7; cursor: not-allowed; }
+        
         .status { margin-top: 15px; padding: 10px; background: #eee; text-align: center; font-size: 12px; border-radius: 4px; font-weight: bold; }
+        
+        /* Area Preview */
         .preview-box { margin-top: 15px; text-align: center; background: #fffde7; border: 1px dashed #999; padding: 10px; border-radius: 4px; }
         canvas { max-width: 100%; height: auto; border: 1px solid #ddd; margin-top: 5px; background: #fff; }
     </style>
@@ -27,22 +39,36 @@
 <body>
 
 <div class="container">
-    <h2>🖨️ Cetak PDF & Foto (58mm)</h2>
+    <h2>🖨️ Cetak RPP02N (58mm)</h2>
 
     <div class="form-group">
         <label for="fileInput">Pilih File (PDF, JPG, PNG, WEBP):</label>
         <input type="file" id="fileInput" accept="application/pdf, image/jpeg, image/png, image/webp">
     </div>
 
+    <!-- Panel Pengatur Gambar -->
+    <div class="controls-box">
+        <div class="slider-group">
+            <label for="brightness">Kecerahan:</label>
+            <input type="range" id="brightness" min="-100" max="100" value="0">
+            <span id="brightnessVal">0</span>
+        </div>
+        <div class="slider-group">
+            <label for="contrast">Kontras:</label>
+            <input type="range" id="contrast" min="-100" max="100" value="20">
+            <span id="contrastVal">20</span>
+        </div>
+    </div>
+
     <div class="btn-group">
-        <button class="btn-connect" onclick="connectPrinter()">🔌 1. Sambungkan Printer</button>
+        <button class="btn-connect" onclick="connectPrinter()">🔌 1. Sambungkan RPP02N</button>
         <button class="btn-print" id="btnPrint" onclick="startPrintProcess()" disabled>🖨️ 2. Cetak Sekarang</button>
     </div>
 
     <div id="status" class="status">Status: Belum Terhubung</div>
 
     <div class="preview-box">
-        <label>Pratinjau Hasil Render (58mm):</label>
+        <label>Pratinjau Dithering (RPP02N 384px):</label>
         <div><canvas id="renderCanvas"></canvas></div>
     </div>
 </div>
@@ -54,9 +80,24 @@
     let gattCharacteristic;
     let currentFileType = null; 
     let currentPdfDoc = null;
+    let originalImage = null; // Menyimpan gambar asli sebelum di-adjust
     
-    const MAX_PRINTER_WIDTH = 384; // Width pixel max thermal 58mm
-    const SLICE_HEIGHT = 32;       // Tinggi pemotongan strip gambar (dalam pixel)
+    const MAX_PRINTER_WIDTH = 384; // Lebar dot piksel RPP02N (48mm)
+    const SLICE_HEIGHT = 32;       // Pemotongan strip aman
+
+    // Control Sliders Listener
+    const brightnessInput = document.getElementById('brightness');
+    const contrastInput = document.getElementById('contrast');
+
+    brightnessInput.addEventListener('input', () => {
+        document.getElementById('brightnessVal').innerText = brightnessInput.value;
+        updatePreview();
+    });
+    
+    contrastInput.addEventListener('input', () => {
+        document.getElementById('contrastVal').innerText = contrastInput.value;
+        updatePreview();
+    });
 
     document.getElementById('fileInput').addEventListener('change', async function(e) {
         const file = e.target.files[0];
@@ -73,7 +114,7 @@
                 const typedarray = new Uint8Array(this.result);
                 try {
                     currentPdfDoc = await pdfjsLib.getDocument(typedarray).promise;
-                    statusEl.innerText = `PDF Berhasil Dimuat (${currentPdfDoc.numPages} Halaman)`;
+                    statusEl.innerText = `PDF Dimuat (${currentPdfDoc.numPages} Halaman)`;
                     await renderPdfPageToCanvas(1);
                 } catch (err) {
                     console.error(err);
@@ -90,18 +131,25 @@
             fileReader.onload = function(event) {
                 const img = new Image();
                 img.onload = function() {
+                    originalImage = img;
                     renderImageToCanvas(img);
-                    statusEl.innerText = "Gambar Berhasil Dimuat ✅";
+                    statusEl.innerText = "Gambar Dimuat ✅";
                 };
                 img.src = event.target.result;
             };
             fileReader.readAsDataURL(file);
-
-        } else {
-            alert('Format file tidak didukung!');
         }
     });
 
+    async function updatePreview() {
+        if (currentFileType === 'pdf' && currentPdfDoc) {
+            await renderPdfPageToCanvas(1);
+        } else if (currentFileType === 'image' && originalImage) {
+            renderImageToCanvas(originalImage);
+        }
+    }
+
+    // 1. Render Halaman PDF
     async function renderPdfPageToCanvas(pageNumber) {
         if (!currentPdfDoc) return;
 
@@ -117,8 +165,10 @@
         canvas.height = viewport.height;
 
         await page.render({ canvasContext: context, viewport: viewport }).promise;
+        applyFiltersAndDithering(canvas);
     }
 
+    // 2. Render Foto
     function renderImageToCanvas(img) {
         const canvas = document.getElementById('renderCanvas');
         const context = canvas.getContext('2d');
@@ -133,19 +183,75 @@
         context.fillStyle = "#FFFFFF";
         context.fillRect(0, 0, targetWidth, targetHeight);
         context.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+        applyFiltersAndDithering(canvas);
     }
 
+    // 3. Penyesuaian Kecerahan, Kontras & Floyd-Steinberg Dithering
+    function applyFiltersAndDithering(canvas) {
+        const ctx = canvas.getContext('2d');
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imgData.data;
+        const w = canvas.width;
+        const h = canvas.height;
+
+        const brightness = parseInt(brightnessInput.value);
+        const contrast = parseInt(contrastInput.value);
+        const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+
+        // Step A: Apply Brightness & Contrast Adjustment
+        for (let i = 0; i < data.length; i += 4) {
+            let r = data[i] + brightness;
+            let g = data[i+1] + brightness;
+            let b = data[i+2] + brightness;
+
+            data[i] = factor * (r - 128) + 128;
+            data[i+1] = factor * (g - 128) + 128;
+            data[i+2] = factor * (b - 128) + 128;
+        }
+
+        // Step B: Floyd-Steinberg Dithering Algoritma
+        for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+                const idx = (y * w + x) * 4;
+                const oldPixel = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+                const newPixel = oldPixel < 128 ? 0 : 255;
+                const error = oldPixel - newPixel;
+
+                data[idx] = newPixel;
+                data[idx + 1] = newPixel;
+                data[idx + 2] = newPixel;
+
+                if (x + 1 < w) {
+                    data[idx + 4] += error * (7 / 16);
+                }
+                if (x - 1 >= 0 && y + 1 < h) {
+                    data[((y + 1) * w + (x - 1)) * 4] += error * (3 / 16);
+                }
+                if (y + 1 < h) {
+                    data[((y + 1) * w + x) * 4] += error * (5 / 16);
+                }
+                if (x + 1 < w && y + 1 < h) {
+                    data[((y + 1) * w + (x + 1)) * 4] += error * (1 / 16);
+                }
+            }
+        }
+
+        ctx.putImageData(imgData, 0, 0);
+    }
+
+    // 4. Koneksi WebBluetooth
     async function connectPrinter() {
         const statusEl = document.getElementById('status');
         try {
-            statusEl.innerText = "Mencari printer Bluetooth...";
+            statusEl.innerText = "Mencari RPP02N...";
 
             bluetoothDevice = await navigator.bluetooth.requestDevice({
                 acceptAllDevices: true,
                 optionalServices: ['00001101-0000-1000-8000-00805f9b34fb', '000018f0-0000-1000-8000-00805f9b34fb']
             });
 
-            statusEl.innerText = `Menghubungkan ke ${bluetoothDevice.name || 'Printer'}...`;
+            statusEl.innerText = `Menghubungkan ke ${bluetoothDevice.name || 'RPP02N'}...`;
             const server = await bluetoothDevice.gatt.connect();
 
             let service;
@@ -158,7 +264,7 @@
             const characteristics = await service.getCharacteristics();
             gattCharacteristic = characteristics[0];
 
-            statusEl.innerText = `Terhubung ke: ${bluetoothDevice.name || 'Printer'} ✅`;
+            statusEl.innerText = `Terhubung ke: ${bluetoothDevice.name || 'RPP02N'} ✅`;
             statusEl.style.background = "#d4edda";
             statusEl.style.color = "#155724";
             document.getElementById('btnPrint').disabled = false;
@@ -170,7 +276,7 @@
         }
     }
 
-    // Fungsi Konversi Strip Gambar ke ESC/POS Raster
+    // 5. Transformasi Strip Canvas ke ESC/POS Raster Bytes (GS v 0)
     function getSliceRasterData(ctx, startY, sliceHeight, width) {
         const imgData = ctx.getImageData(0, startY, width, sliceHeight).data;
         const bytesWide = Math.ceil(width / 8);
@@ -183,12 +289,8 @@
                     const pixelX = x * 8 + b;
                     if (pixelX < width) {
                         const idx = (y * width + pixelX) * 4;
-                        const r = imgData[idx];
-                        const g = imgData[idx + 1];
-                        const bVal = imgData[idx + 2];
-                        const avg = (r + g + bVal) / 3;
-
-                        if (avg < 160) { // Ambang batas hitam/putih
+                        // Karena sudah di-dither, piksel R=0 adalah hitam
+                        if (imgData[idx] === 0) { 
                             byte |= (0x80 >> b);
                         }
                     }
@@ -212,7 +314,7 @@
         return fullCommand;
     }
 
-    // Fungsi Cetak Canvas secara Bertahap per-Strip
+    // 6. Loop Pencetakan Strip Canvas
     async function printCanvasInSlices(canvas, statusEl) {
         const ctx = canvas.getContext('2d');
         const totalHeight = canvas.height;
@@ -228,19 +330,17 @@
             
             statusEl.innerText = `Mencetak bagian ${sliceCount} dari ${totalSlices}...`;
 
-            // Ambil data raster untuk potongan kecil ini
             const sliceBytes = getSliceRasterData(ctx, currentY, currentSliceHeight, width);
-            
-            // Kirim potongan ke printer
             await sendDataInChunks(sliceBytes);
 
-            // Jeda 120ms setelah setiap strip agar printer sempat mencetak secara fisik
+            // Delay 120ms antar strip untuk motor RPP02N
             await new Promise(resolve => setTimeout(resolve, 120));
 
             currentY += currentSliceHeight;
         }
     }
 
+    // 7. Mulai Cetak
     async function startPrintProcess() {
         if (!gattCharacteristic) {
             alert("Printer belum terhubung!");
@@ -256,36 +356,35 @@
         try {
             const canvas = document.getElementById('renderCanvas');
             
-            // Reset Printer
+            // ESC @ (Reset Printer)
             await sendDataInChunks(new Uint8Array([0x1B, 0x40]));
 
             if (currentFileType === 'pdf') {
                 for (let pageNum = 1; pageNum <= currentPdfDoc.numPages; pageNum++) {
-                    statusEl.innerText = `Merender PDF Halaman ${pageNum}...`;
+                    statusEl.innerText = `Merender Halaman ${pageNum}...`;
                     await renderPdfPageToCanvas(pageNum);
-                    
                     await printCanvasInSlices(canvas, statusEl);
 
-                    // Feed tipis antar halaman
+                    // Feed antar halaman
                     await sendDataInChunks(new Uint8Array([0x1B, 0x64, 0x02]));
                 }
             } else if (currentFileType === 'image') {
                 await printCanvasInSlices(canvas, statusEl);
             }
 
-            // Feed Kertas Akhir
+            // Feed Akhir Kertas
             await sendDataInChunks(new Uint8Array([0x0A, 0x0A, 0x0A]));
 
-            statusEl.innerText = "Selesai mencetak! 🎉";
+            statusEl.innerText = "Selesai mencetak ke RPP02N! 🎉";
         } catch (error) {
             console.error(error);
             alert("Gagal mencetak: " + error.message);
         }
     }
 
-    // Mengirim Data dengan Chunk Kecil & Jeda
+    // 8. Pengiriman Data Bertahap (Chunking Safe BLE)
     async function sendDataInChunks(data) {
-        const CHUNK_SIZE = 80; // Dikurangi ke 80 byte agar sangat aman di Bluetooth Android
+        const CHUNK_SIZE = 80; 
 
         for (let i = 0; i < data.length; i += CHUNK_SIZE) {
             const chunk = data.slice(i, i + CHUNK_SIZE);
