@@ -3,26 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cetak PDF & Foto (Thermal 58mm)</title>
-    <!-- Library PDF.js dari CDN -->
+    <title>Cetak Thermal 58mm</title>
+    <!-- Library PDF.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
-        * { box-sizing: border-box; font-family: Arial, sans-serif; }
-        body { background-color: #f4f4f9; padding: 20px; display: flex; justify-content: center; }
-        .container { background: #fff; width: 100%; max-width: 450px; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
-        h2 { text-align: center; border-bottom: 2px dashed #333; padding-bottom: 10px; margin-bottom: 15px; }
+        * { 
+            box-sizing: border-box; 
+            font-family: Arial, sans-serif; 
+            margin: 0;
+            padding: 0;
+        }
+        body { 
+            background-color: #f4f4f9; 
+            padding: 15px; 
+            display: block; /* Mencegah elemen berjejer ke samping */
+        }
+        .container { 
+            background: #fff; 
+            width: 100%; 
+            max-width: 450px; 
+            margin: 0 auto;
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15); 
+        }
+        h2 { 
+            text-align: center; 
+            border-bottom: 2px dashed #333; 
+            padding-bottom: 10px; 
+            margin-bottom: 15px; 
+            font-size: 18px;
+        }
         .form-group { margin-bottom: 15px; }
         label { font-weight: bold; display: block; margin-bottom: 5px; font-size: 14px; }
-        input[type="file"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
-        .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        input[type="file"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+        .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
         button { padding: 12px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
         .btn-connect { background: #2980b9; color: white; }
         .btn-print { background: #27ae60; color: white; }
         .btn-print:disabled { background: #a5d6a7; cursor: not-allowed; }
         .status { margin-top: 15px; padding: 10px; background: #eee; text-align: center; font-size: 12px; border-radius: 4px; font-weight: bold; }
         
-        /* Area Preview Canvas */
-        .preview-box { margin-top: 15px; text-align: center; background: #fffde7; border: 1px dashed #999; padding: 10px; }
+        /* Area Preview */
+        .preview-box { margin-top: 15px; text-align: center; background: #fffde7; border: 1px dashed #999; padding: 10px; border-radius: 4px; }
         canvas { max-width: 100%; height: auto; border: 1px solid #ddd; margin-top: 5px; background: #fff; }
     </style>
 </head>
@@ -50,18 +73,16 @@
 </div>
 
 <script>
-    // Konfigurasi Worker PDF.js
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
     let bluetoothDevice;
     let gattCharacteristic;
-    let currentFileType = null; // 'pdf' atau 'image'
+    let currentFileType = null; 
     let currentPdfDoc = null;
     let loadedImageElement = null;
     
-    const MAX_PRINTER_WIDTH = 384; // Maksimal piksel horizontal printer thermal 58mm
+    const MAX_PRINTER_WIDTH = 384; // Width pixel max printer 58mm
 
-    // Listener saat pengguna memilih file
     document.getElementById('fileInput').addEventListener('change', async function(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -103,11 +124,10 @@
             fileReader.readAsDataURL(file);
 
         } else {
-            alert('Format file tidak didukung! Harap pilih file PDF atau Foto (JPG/PNG).');
+            alert('Format file tidak didukung!');
         }
     });
 
-    // 1. Render Halaman PDF ke Canvas
     async function renderPdfPageToCanvas(pageNumber) {
         if (!currentPdfDoc) return;
 
@@ -122,13 +142,9 @@
         canvas.width = viewport.width;
         canvas.height = viewport.height;
 
-        await page.render({
-            canvasContext: context,
-            viewport: viewport
-        }).promise;
+        await page.render({ canvasContext: context, viewport: viewport }).promise;
     }
 
-    // 2. Render Foto/Gambar ke Canvas dengan Auto Scaling
     function renderImageToCanvas(img) {
         const canvas = document.getElementById('renderCanvas');
         const context = canvas.getContext('2d');
@@ -145,7 +161,6 @@
         context.drawImage(img, 0, 0, targetWidth, targetHeight);
     }
 
-    // 3. Hubungkan ke Printer via WebBluetooth
     async function connectPrinter() {
         const statusEl = document.getElementById('status');
         try {
@@ -181,7 +196,6 @@
         }
     }
 
-    // 4. Konversi Pixel Canvas ke Perintah ESC/POS Bit-Image (GS v 0)
     function canvasToEscPosRaster(canvas) {
         const ctx = canvas.getContext('2d');
         const width = canvas.width;
@@ -227,7 +241,6 @@
         return fullCommand;
     }
 
-    // 5. Fungsi Utama Memulai Pencetakan
     async function startPrintProcess() {
         if (!gattCharacteristic) {
             alert("Printer belum terhubung!");
@@ -244,7 +257,7 @@
         try {
             const canvas = document.getElementById('renderCanvas');
             
-            // Reset / Inisialisasi printer (ESC @)
+            // Inisialisasi printer
             await sendDataInChunks(new Uint8Array([0x1B, 0x40]));
 
             if (currentFileType === 'pdf') {
@@ -255,7 +268,6 @@
                     const imageBytes = canvasToEscPosRaster(canvas);
                     await sendDataInChunks(imageBytes);
 
-                    // Spasi antar halaman (ESC d 3)
                     await sendDataInChunks(new Uint8Array([0x1B, 0x64, 0x03]));
                 }
             } else if (currentFileType === 'image') {
@@ -264,7 +276,7 @@
                 await sendDataInChunks(imageBytes);
             }
 
-            // Feed Kertas di Akhir (3 Baris Baru)
+            // Feed Kertas
             await sendDataInChunks(new Uint8Array([0x0A, 0x0A, 0x0A]));
 
             statusEl.innerText = "Selesai mencetak! 🎉";
@@ -274,10 +286,8 @@
         }
     }
 
-    // 6. Mengirim Byte Data Bertahap (Chunking Aman untuk BLE Android)
     async function sendDataInChunks(data) {
-        // Diperkecil ke 100 bytes agar stabil di Bluetooth Android
-        const CHUNK_SIZE = 100; 
+        const CHUNK_SIZE = 100; // Ukuran aman BLE
 
         for (let i = 0; i < data.length; i += CHUNK_SIZE) {
             const chunk = data.slice(i, i + CHUNK_SIZE);
@@ -292,269 +302,7 @@
                 await gattCharacteristic.writeValue(chunk);
             }
 
-            // Jeda 30ms agar buffer BLE tidak meledak
             await new Promise(resolve => setTimeout(resolve, 30)); 
-        }
-    }
-</script>
-
-</body>
-</html>
-        <input type="file" id="fileInput" accept="application/pdf, image/jpeg, image/png, image/webp">
-    </div>
-
-    <div class="btn-group">
-        <button class="btn-connect" onclick="connectPrinter()">🔌 1. Sambungkan Printer</button>
-        <button class="btn-print" id="btnPrint" onclick="startPrintProcess()" disabled>🖨️ 2. Cetak Sekarang</button>
-    </div>
-
-    <div id="status" class="status">Status: Belum Terhubung</div>
-
-    <div class="preview-box">
-        <label>Pratinjau Hasil Render (58mm):</label>
-        <div><canvas id="renderCanvas"></canvas></div>
-    </div>
-</div>
-
-<script>
-    // Konfigurasi Worker PDF.js
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-    let bluetoothDevice;
-    let gattCharacteristic;
-    let currentFileType = null; // 'pdf' atau 'image'
-    let currentPdfDoc = null;
-    let loadedImageElement = null;
-    
-    const MAX_PRINTER_WIDTH = 384; // Maksimal piksel horizontal printer thermal 58mm
-
-    // Listener saat pengguna memilih file (PDF atau Foto)
-    document.getElementById('fileInput').addEventListener('change', async function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const statusEl = document.getElementById('status');
-        
-        // Cek Tipe File
-        if (file.type === 'application/pdf') {
-            currentFileType = 'pdf';
-            statusEl.innerText = "Membaca file PDF...";
-            
-            const fileReader = new FileReader();
-            fileReader.onload = async function() {
-                const typedarray = new Uint8Array(this.result);
-                try {
-                    currentPdfDoc = await pdfjsLib.getDocument(typedarray).promise;
-                    statusEl.innerText = `PDF Berhasil Dimuat (${currentPdfDoc.numPages} Halaman)`;
-                    await renderPdfPageToCanvas(1);
-                } catch (err) {
-                    console.error(err);
-                    statusEl.innerText = "Gagal membaca PDF: " + err.message;
-                }
-            };
-            fileReader.readAsArrayBuffer(file);
-
-        } else if (file.type.startsWith('image/')) {
-            currentFileType = 'image';
-            statusEl.innerText = "Membaca file gambar...";
-
-            const fileReader = new FileReader();
-            fileReader.onload = function(event) {
-                const img = new Image();
-                img.onload = function() {
-                    loadedImageElement = img;
-                    renderImageToCanvas(img);
-                    statusEl.innerText = "Gambar Berhasil Dimuat ✅";
-                };
-                img.src = event.target.result;
-            };
-            fileReader.readAsDataURL(file);
-
-        } else {
-            alert('Format file tidak didukung! Harap pilih file PDF atau Foto (JPG/PNG).');
-        }
-    });
-
-    // 1. Render Halaman PDF ke Canvas
-    async function renderPdfPageToCanvas(pageNumber) {
-        if (!currentPdfDoc) return;
-
-        const page = await currentPdfDoc.getPage(pageNumber);
-        const unscaledViewport = page.getViewport({ scale: 1.0 });
-
-        const scale = MAX_PRINTER_WIDTH / unscaledViewport.width;
-        const viewport = page.getViewport({ scale: scale });
-
-        const canvas = document.getElementById('renderCanvas');
-        const context = canvas.getContext('2d');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-
-        await page.render({
-            canvasContext: context,
-            viewport: viewport
-        }).promise;
-    }
-
-    // 2. Render Foto/Gambar ke Canvas dengan Auto Scaling
-    function renderImageToCanvas(img) {
-        const canvas = document.getElementById('renderCanvas');
-        const context = canvas.getContext('2d');
-
-        // Hitung rasio tinggi agar proporsional saat lebar disesuaikan ke 384px
-        const scale = MAX_PRINTER_WIDTH / img.width;
-        const targetWidth = MAX_PRINTER_WIDTH;
-        const targetHeight = img.height * scale;
-
-        canvas.width = targetWidth;
-        canvas.height = targetHeight;
-
-        // Bersihkan canvas dan gambar ulang foto
-        context.fillStyle = "#FFFFFF";
-        context.fillRect(0, 0, targetWidth, targetHeight);
-        context.drawImage(img, 0, 0, targetWidth, targetHeight);
-    }
-
-    // 3. Hubungkan ke Printer via WebBluetooth
-    async function connectPrinter() {
-        const statusEl = document.getElementById('status');
-        try {
-            statusEl.innerText = "Mencari printer Bluetooth...";
-
-            bluetoothDevice = await navigator.bluetooth.requestDevice({
-                acceptAllDevices: true,
-                optionalServices: ['00001101-0000-1000-8000-00805f9b34fb', '000018f0-0000-1000-8000-00805f9b34fb']
-            });
-
-            statusEl.innerText = `Menghubungkan ke ${bluetoothDevice.name || 'Printer'}...`;
-            const server = await bluetoothDevice.gatt.connect();
-
-            let service;
-            try {
-                service = await server.getPrimaryService('00001101-0000-1000-8000-00805f9b34fb');
-            } catch (e) {
-                service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
-            }
-
-            const characteristics = await service.getCharacteristics();
-            gattCharacteristic = characteristics[0];
-
-            statusEl.innerText = `Terhubung ke: ${bluetoothDevice.name || 'Printer'} ✅`;
-            statusEl.style.background = "#d4edda";
-            statusEl.style.color = "#155724";
-            document.getElementById('btnPrint').disabled = false;
-        } catch (error) {
-            console.error(error);
-            statusEl.innerText = "Gagal terhubung: " + error.message;
-            statusEl.style.background = "#f8d7da";
-            statusEl.style.color = "#721c24";
-        }
-    }
-
-    // 4. Konversi Pixel Canvas ke Perintah ESC/POS Bit-Image (GS v 0)
-    function canvasToEscPosRaster(canvas) {
-        const ctx = canvas.getContext('2d');
-        const width = canvas.width;
-        const height = canvas.height;
-        const imgData = ctx.getImageData(0, 0, width, height).data;
-
-        const bytesWide = Math.ceil(width / 8);
-        const rasterData = [];
-
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < bytesWide; x++) {
-                let byte = 0;
-                for (let b = 0; b < 8; b++) {
-                    const pixelX = x * 8 + b;
-                    if (pixelX < width) {
-                        const idx = (y * width + pixelX) * 4;
-                        const r = imgData[idx];
-                        const g = imgData[idx + 1];
-                        const bVal = imgData[idx + 2];
-                        const avg = (r + g + bVal) / 3;
-
-                        // Threshold (180): Piksel yang cukup gelap diubah jadi hitam printer
-                        if (avg < 180) { 
-                            byte |= (0x80 >> b);
-                        }
-                    }
-                }
-                rasterData.push(byte);
-            }
-        }
-
-        // Header Command: GS v 0 0 xL xH yL yH
-        const xL = bytesWide & 0xFF;
-        const xH = (bytesWide >> 8) & 0xFF;
-        const yL = height & 0xFF;
-        const yH = (height >> 8) & 0xFF;
-
-        const header = new Uint8Array([0x1D, 0x76, 0x30, 0x00, xL, xH, yL, yH]);
-        const body = new Uint8Array(rasterData);
-
-        const fullCommand = new Uint8Array(header.length + body.length);
-        fullCommand.set(header, 0);
-        fullCommand.set(body, header.length);
-
-        return fullCommand;
-    }
-
-    // 5. Fungsi Utama Memulai Pencetakan
-    async function startPrintProcess() {
-        if (!gattCharacteristic) {
-            alert("Printer belum terhubung!");
-            return;
-        }
-        if (!currentFileType) {
-            alert("Pilih file PDF atau Foto terlebih dahulu!");
-            return;
-        }
-
-        const statusEl = document.getElementById('status');
-        statusEl.innerText = "Mempersiapkan pencetakan...";
-
-        try {
-            const canvas = document.getElementById('renderCanvas');
-            
-            // Inisialisasi printer (ESC @)
-            await sendDataInChunks(new Uint8Array([0x1B, 0x40]));
-
-            if (currentFileType === 'pdf') {
-                // Cetak semua halaman PDF
-                for (let pageNum = 1; pageNum <= currentPdfDoc.numPages; pageNum++) {
-                    statusEl.innerText = `Mencetak PDF Halaman ${pageNum} dari ${currentPdfDoc.numPages}...`;
-                    await renderPdfPageToCanvas(pageNum);
-                    
-                    const imageBytes = canvasToEscPosRaster(canvas);
-                    await sendDataInChunks(imageBytes);
-
-                    // Spasi antar halaman (ESC d 3)
-                    await sendDataInChunks(new Uint8Array([0x1B, 0x64, 0x03]));
-                }
-            } else if (currentFileType === 'image') {
-                // Cetak Gambar/Foto
-                statusEl.innerText = "Mencetak gambar...";
-                const imageBytes = canvasToEscPosRaster(canvas);
-                await sendDataInChunks(imageBytes);
-            }
-
-            // Feed Kertas di Akhir (3 Baris Baru)
-            await sendDataInChunks(new Uint8Array([0x0A, 0x0A, 0x0A]));
-
-            statusEl.innerText = "Selesai mencetak! 🎉";
-        } catch (error) {
-            console.error(error);
-            alert("Gagal mencetak: " + error.message);
-        }
-    }
-
-    // 6. Mengirim Byte Data Bertahap (Buffer Chunking)
-    async function sendDataInChunks(data) {
-        const CHUNK_SIZE = 512; 
-        for (let i = 0; i < data.length; i += CHUNK_SIZE) {
-            const chunk = data.slice(i, i + CHUNK_SIZE);
-            await gattCharacteristic.writeValue(chunk);
-            await new Promise(resolve => setTimeout(resolve, 50)); 
         }
     }
 </script>
