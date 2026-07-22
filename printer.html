@@ -16,7 +16,6 @@
         label { font-weight: bold; display: block; margin-bottom: 5px; font-size: 13px; }
         input[type="file"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
         
-        /* Control Slider Adjustments */
         .controls-box { background: #f8f9fa; border: 1px solid #e9ecef; padding: 10px; border-radius: 6px; margin-bottom: 15px; }
         .slider-group { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
         .slider-group label { margin-bottom: 0; font-size: 12px; width: 35%; }
@@ -31,7 +30,6 @@
         
         .status { margin-top: 15px; padding: 10px; background: #eee; text-align: center; font-size: 12px; border-radius: 4px; font-weight: bold; }
         
-        /* Area Preview */
         .preview-box { margin-top: 15px; text-align: center; background: #fffde7; border: 1px dashed #999; padding: 10px; border-radius: 4px; }
         canvas { max-width: 100%; height: auto; border: 1px solid #ddd; margin-top: 5px; background: #fff; }
     </style>
@@ -46,7 +44,6 @@
         <input type="file" id="fileInput" accept="application/pdf, image/jpeg, image/png, image/webp">
     </div>
 
-    <!-- Panel Pengatur Gambar -->
     <div class="controls-box">
         <div class="slider-group">
             <label for="brightness">Kecerahan:</label>
@@ -80,12 +77,11 @@
     let gattCharacteristic;
     let currentFileType = null; 
     let currentPdfDoc = null;
-    let originalImage = null; // Menyimpan gambar asli sebelum di-adjust
+    let originalImage = null;
     
-    const MAX_PRINTER_WIDTH = 384; // Lebar dot piksel RPP02N (48mm)
-    const SLICE_HEIGHT = 32;       // Pemotongan strip aman
+    const MAX_PRINTER_WIDTH = 384; 
+    const SLICE_HEIGHT = 24; // Diperkecil ke 24 baris piksel agar ukuran payload per strip sangat kecil
 
-    // Control Sliders Listener
     const brightnessInput = document.getElementById('brightness');
     const contrastInput = document.getElementById('contrast');
 
@@ -149,7 +145,6 @@
         }
     }
 
-    // 1. Render Halaman PDF
     async function renderPdfPageToCanvas(pageNumber) {
         if (!currentPdfDoc) return;
 
@@ -168,7 +163,6 @@
         applyFiltersAndDithering(canvas);
     }
 
-    // 2. Render Foto
     function renderImageToCanvas(img) {
         const canvas = document.getElementById('renderCanvas');
         const context = canvas.getContext('2d');
@@ -187,7 +181,6 @@
         applyFiltersAndDithering(canvas);
     }
 
-    // 3. Penyesuaian Kecerahan, Kontras & Floyd-Steinberg Dithering
     function applyFiltersAndDithering(canvas) {
         const ctx = canvas.getContext('2d');
         const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -199,7 +192,6 @@
         const contrast = parseInt(contrastInput.value);
         const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
 
-        // Step A: Apply Brightness & Contrast Adjustment
         for (let i = 0; i < data.length; i += 4) {
             let r = data[i] + brightness;
             let g = data[i+1] + brightness;
@@ -210,7 +202,6 @@
             data[i+2] = factor * (b - 128) + 128;
         }
 
-        // Step B: Floyd-Steinberg Dithering Algoritma
         for (let y = 0; y < h; y++) {
             for (let x = 0; x < w; x++) {
                 const idx = (y * w + x) * 4;
@@ -222,25 +213,16 @@
                 data[idx + 1] = newPixel;
                 data[idx + 2] = newPixel;
 
-                if (x + 1 < w) {
-                    data[idx + 4] += error * (7 / 16);
-                }
-                if (x - 1 >= 0 && y + 1 < h) {
-                    data[((y + 1) * w + (x - 1)) * 4] += error * (3 / 16);
-                }
-                if (y + 1 < h) {
-                    data[((y + 1) * w + x) * 4] += error * (5 / 16);
-                }
-                if (x + 1 < w && y + 1 < h) {
-                    data[((y + 1) * w + (x + 1)) * 4] += error * (1 / 16);
-                }
+                if (x + 1 < w) data[idx + 4] += error * (7 / 16);
+                if (x - 1 >= 0 && y + 1 < h) data[((y + 1) * w + (x - 1)) * 4] += error * (3 / 16);
+                if (y + 1 < h) data[((y + 1) * w + x) * 4] += error * (5 / 16);
+                if (x + 1 < w && y + 1 < h) data[((y + 1) * w + (x + 1)) * 4] += error * (1 / 16);
             }
         }
 
         ctx.putImageData(imgData, 0, 0);
     }
 
-    // 4. Koneksi WebBluetooth
     async function connectPrinter() {
         const statusEl = document.getElementById('status');
         try {
@@ -248,17 +230,20 @@
 
             bluetoothDevice = await navigator.bluetooth.requestDevice({
                 acceptAllDevices: true,
-                optionalServices: ['00001101-0000-1000-8000-00805f9b34fb', '000018f0-0000-1000-8000-00805f9b34fb']
+                optionalServices: ['00001101-0000-1000-8000-00805f9b34fb', '000018f0-0000-1000-8000-00805f9b34fb', '0000ffe0-0000-1000-8000-00805f9b34fb']
             });
 
             statusEl.innerText = `Menghubungkan ke ${bluetoothDevice.name || 'RPP02N'}...`;
             const server = await bluetoothDevice.gatt.connect();
 
             let service;
-            try {
-                service = await server.getPrimaryService('00001101-0000-1000-8000-00805f9b34fb');
-            } catch (e) {
-                service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+            const serviceUUIDs = ['000018f0-0000-1000-8000-00805f9b34fb', '0000ffe0-0000-1000-8000-00805f9b34fb', '00001101-0000-1000-8000-00805f9b34fb'];
+            
+            for (let uuid of serviceUUIDs) {
+                try {
+                    service = await server.getPrimaryService(uuid);
+                    if (service) break;
+                } catch (e) {}
             }
 
             const characteristics = await service.getCharacteristics();
@@ -276,7 +261,6 @@
         }
     }
 
-    // 5. Transformasi Strip Canvas ke ESC/POS Raster Bytes (GS v 0)
     function getSliceRasterData(ctx, startY, sliceHeight, width) {
         const imgData = ctx.getImageData(0, startY, width, sliceHeight).data;
         const bytesWide = Math.ceil(width / 8);
@@ -289,7 +273,6 @@
                     const pixelX = x * 8 + b;
                     if (pixelX < width) {
                         const idx = (y * width + pixelX) * 4;
-                        // Karena sudah di-dither, piksel R=0 adalah hitam
                         if (imgData[idx] === 0) { 
                             byte |= (0x80 >> b);
                         }
@@ -314,7 +297,6 @@
         return fullCommand;
     }
 
-    // 6. Loop Pencetakan Strip Canvas
     async function printCanvasInSlices(canvas, statusEl) {
         const ctx = canvas.getContext('2d');
         const totalHeight = canvas.height;
@@ -328,19 +310,20 @@
             sliceCount++;
             const currentSliceHeight = Math.min(SLICE_HEIGHT, totalHeight - currentY);
             
-            statusEl.innerText = `Mencetak bagian ${sliceCount} dari ${totalSlices}...`;
+            statusEl.innerText = `Mencetak strip ${sliceCount} dari ${totalSlices}...`;
 
             const sliceBytes = getSliceRasterData(ctx, currentY, currentSliceHeight, width);
+            
+            // Kirim data strip
             await sendDataInChunks(sliceBytes);
 
-            // Delay 120ms antar strip untuk motor RPP02N
-            await new Promise(resolve => setTimeout(resolve, 120));
+            // Jeda 300ms memberi waktu fisik bagi RPP02N mencetak & menarik kertas
+            await new Promise(resolve => setTimeout(resolve, 300));
 
             currentY += currentSliceHeight;
         }
     }
 
-    // 7. Mulai Cetak
     async function startPrintProcess() {
         if (!gattCharacteristic) {
             alert("Printer belum terhubung!");
@@ -356,7 +339,7 @@
         try {
             const canvas = document.getElementById('renderCanvas');
             
-            // ESC @ (Reset Printer)
+            // Reset Printer
             await sendDataInChunks(new Uint8Array([0x1B, 0x40]));
 
             if (currentFileType === 'pdf') {
@@ -365,41 +348,43 @@
                     await renderPdfPageToCanvas(pageNum);
                     await printCanvasInSlices(canvas, statusEl);
 
-                    // Feed antar halaman
                     await sendDataInChunks(new Uint8Array([0x1B, 0x64, 0x02]));
                 }
             } else if (currentFileType === 'image') {
                 await printCanvasInSlices(canvas, statusEl);
             }
 
-            // Feed Akhir Kertas
+            // Feed Kertas
             await sendDataInChunks(new Uint8Array([0x0A, 0x0A, 0x0A]));
 
-            statusEl.innerText = "Selesai mencetak ke RPP02N! 🎉";
+            statusEl.innerText = "Selesai mencetak! 🎉";
         } catch (error) {
             console.error(error);
             alert("Gagal mencetak: " + error.message);
         }
     }
 
-    // 8. Pengiriman Data Bertahap (Chunking Safe BLE)
+    // PENYEMPURNAAN TRANSMISI DATA BLE (SUPER SAFE FOR ANDROID)
     async function sendDataInChunks(data) {
-        const CHUNK_SIZE = 80; 
+        const CHUNK_SIZE = 20; // 20 Byte adalah standar MTU paling aman di seluruh Android
 
         for (let i = 0; i < data.length; i += CHUNK_SIZE) {
             const chunk = data.slice(i, i + CHUNK_SIZE);
 
             try {
-                if (gattCharacteristic.writeValueWithoutResponse) {
-                    await gattCharacteristic.writeValueWithoutResponse(chunk);
-                } else {
+                // Gunakan writeValueWithResponse (diketik sebagai writeValue) agar HP menunggu balasan "ACK" dari RPP02N
+                if (gattCharacteristic.writeValue) {
                     await gattCharacteristic.writeValue(chunk);
+                } else {
+                    await gattCharacteristic.writeValueWithResponse(chunk);
                 }
             } catch (e) {
-                await gattCharacteristic.writeValue(chunk);
+                // Fallback jika dikhususkan tanpa response
+                await gattCharacteristic.writeValueWithoutResponse(chunk);
             }
 
-            await new Promise(resolve => setTimeout(resolve, 20)); 
+            // Jeda 25ms per paket kecil 20-byte
+            await new Promise(resolve => setTimeout(resolve, 25)); 
         }
     }
 </script>
